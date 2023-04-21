@@ -1,0 +1,16 @@
+<launch>
+  <group ns="fabot">
+  
+    <node pkg="load_ring_package" name="load_ring_node" type="load_ring"/>
+    
+    <node pkg="joy" name="joy_node" type="joy_node">
+      <param name="dev" type="string" value="/dev/input/js2"/>
+    </node>
+    
+    <node pkg="rosserial_python" type="serial_node.py" name="serial_node1">
+      <param name="port" value="/dev/ttyACM0"/>
+      <param name="baud" value="2000000"/>
+    </node>
+    
+  </group>
+</launch>
