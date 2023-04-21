@@ -20,11 +20,15 @@ ros::NodeHandle nh;
 #define DO_CLOSE 2
 #define DO_UP 1
 #define DO_DOWN 2
+#define ARM_ENC 4 // 腕のアブソリュートエンコーダ番号
+#define UP_LIMIT 12000 // adbotの高さに合わせてあとで調整する
+#define DOWN_LIMIT 5893
 
 int hand_state = 0;
 int arm_state = 0;
 int hand_duty = 0;
 int arm_duty = 0;
+const int arm_bias_duty = 200;
 
 
 /*ステア制御のグローバル変数*/
@@ -127,10 +131,24 @@ void loop()
     DC_motor::put(ARM_MOTOR, 0);
   } else if (arm_state == DO_UP) {
     digitalWrite(24, LOW);
-    DC_motor::put(ARM_MOTOR, arm_duty);
+    uint16_t enc_val = Abs_enc::get(ARM_ENC);
+    if (enc_val < UP_LIMIT && enc_val != ABS_ENC_ERR && enc_val != ABS_ENC_ERR_RP2040) {
+      double angle = (enc_val - DOWN_LIMIT) / (double)ABS_ENC_MAX * TWO_PI;
+      DC_motor::put(ARM_MOTOR, -(arm_duty + cos(angle)*arm_bias_duty));
+    }
+    else {
+      DC_motor::put(ARM_MOTOR, 0);
+    }
   } else if (arm_state == DO_DOWN) {
     digitalWrite(24, LOW);
-    DC_motor::put(ARM_MOTOR, -arm_duty);
+    uint16_t enc_val = Abs_enc::get(ARM_ENC);
+    if (Abs_enc::get(ARM_ENC) > DOWN_LIMIT && enc_val != ABS_ENC_ERR && enc_val != ABS_ENC_ERR_RP2040) {
+      double angle = (enc_val - DOWN_LIMIT) / (double)ABS_ENC_MAX * TWO_PI;
+      DC_motor::put(ARM_MOTOR, +(arm_duty - cos(angle)*arm_bias_duty));
+    }
+    else {
+      DC_motor::put(ARM_MOTOR, 0);
+    }
   }
 
 
@@ -178,7 +196,7 @@ void loop()
   }
   // enc_pub.publish(&enc_msg);
   // duty_pub.publish(&duty_msg);
-  rad_pub.publish(&rad_msg);
+  // rad_pub.publish(&rad_msg);
 
   Cubic::update();
 }

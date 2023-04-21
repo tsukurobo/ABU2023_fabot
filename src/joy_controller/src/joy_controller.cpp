@@ -23,7 +23,7 @@ string mode = "XVEHICLE";
 
 int freq = 1000;
 
-FourWheelSteer steer(34.286, 31.0, 35.0);
+FourWheelSteer steer(34.286, 310.0, 350.0);
 double vx = 0.0, vy = 0.0, wx = 0.0, wy = 0.0, TurnRadius = 1e6;
 double v_max = 1.0, w_max = M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
 
