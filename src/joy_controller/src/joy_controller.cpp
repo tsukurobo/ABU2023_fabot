@@ -8,11 +8,11 @@
 #define ENABLE_BUTTON 5
 #define VY_AXE 0
 #define VX_AXE 1
-#define WX_AXE 2
-#define WY_AXE 3
-#define XVEHICLE_AXE 5
-#define YVEHICLE_AXE 4
-#define ROTATE_AXE 5
+#define WX_AXE 3
+#define WY_AXE 4
+#define XVEHICLE_AXE 7
+#define YVEHICLE_AXE 6
+#define ROTATE_AXE 7
 
 using namespace std;
 
