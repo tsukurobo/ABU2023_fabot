@@ -69,11 +69,6 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     }
     else if (joy_msg.buttons[AUTO_BUTTON]) {
         target.stop = false;
-        steer.calcOdom(angVel, angle);
-        steer.getOdom(x, y, theta);
-        odom.pose.pose.position.x = x;
-        odom.pose.pose.position.y = y;
-        odom.pose.pose.orientation.z = theta;
         double w = purepursuit.compute_angvel(x, y, theta);
         steer.xVehicle(auto_vx, w);
 
@@ -103,6 +98,11 @@ void radCb(const msgs::FourWheelSteerRad &rad_msg) {
         angVel[i] = rad_msg.angVel[i];
         angle[i]  = rad_msg.angle[i];
     }
+    steer.calcOdom(angVel, angle);
+    steer.getOdom(x, y, theta);
+    odom.pose.pose.position.x = x;
+    odom.pose.pose.position.y = y;
+    odom.pose.pose.orientation.z = theta;
 }
 
 void setTarget() {
