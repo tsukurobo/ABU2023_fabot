@@ -196,7 +196,7 @@ void loop()
   }
   // enc_pub.publish(&enc_msg);
   // duty_pub.publish(&duty_msg);
-  // rad_pub.publish(&rad_msg);
+  rad_pub.publish(&rad_msg);
 
   Cubic::update();
 }
