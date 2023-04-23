@@ -126,6 +126,7 @@ include_directories(
 # )
 add_executable(joy_controller src/joy_controller.cpp)
 add_library(FourWheelSteer src/FourWheelSteer.cpp)
+add_library(PurePursuit src/PurePursuit.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -154,6 +155,7 @@ add_library(FourWheelSteer src/FourWheelSteer.cpp)
 target_link_libraries(joy_controller
   ${catkin_LIBRARIES}
   FourWheelSteer
+  PurePursuit
 )
 
 #############

@@ -4,8 +4,12 @@
 #include <msgs/FourWheelSteerPIDGain.h>
 #include <sensor_msgs/Joy.h>
 #include "FourWheelSteer.h"
+#include "PurePursuit.h"
+#include <msgs/myOdom.h>
+#include <nav_msgs/Odometry.h>
 
 #define ENABLE_BUTTON 5
+#define AUTO_BUTTON 4
 #define VY_AXE 0
 #define VX_AXE 1
 #define WX_AXE 3
@@ -31,6 +35,16 @@ double v_max = 1.0, w_max = M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
 double Vkp[4], Vki[4], Vkd[4];
 double Pkp[4], Pki[4], Pkd[4];
 
+double angVel[4], angle[4];
+double x, y, theta;
+nav_msgs::Odometry odom;
+
+point pass[] = {{-1.0, 0.0}, {4.75, 0.0}};
+uint pass_num = 2;
+double look_ahead_dist = 0.2;
+PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
+double auto_vx = 0.05;
+
 void joyCb(const sensor_msgs::Joy &joy_msg) {
     if (joy_msg.buttons[ENABLE_BUTTON]) {
         target.stop = false;
@@ -38,10 +52,6 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         vx =  joy_msg.axes[VX_AXE] * joy_msg.axes[VX_AXE] * copysign(v_max, joy_msg.axes[VX_AXE]);
         wx  = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(w_max, joy_msg.axes[WX_AXE]);
         wy  = -joy_msg.axes[WY_AXE] * joy_msg.axes[WY_AXE] * copysign(w_max, joy_msg.axes[WY_AXE]);
-        // vy =  joy_msg.axes[VY_AXE] * v_max;
-        // vx =  joy_msg.axes[VX_AXE] * v_max;
-        // wx  = joy_msg.axes[WX_AXE] * w_max;
-        // wy  = -joy_msg.axes[WY_AXE] * w_max;
         ROS_INFO_STREAM(mode);
 
         if (mode == "XVEHICLE") {
@@ -56,6 +66,17 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         else if (mode == "ROTATE") {
             steer.rotate(wx);
         }
+    }
+    else if (joy_msg.buttons[AUTO_BUTTON]) {
+        target.stop = false;
+        steer.calcOdom(angVel, angle);
+        steer.getOdom(x, y, theta);
+        odom.pose.pose.position.x = x;
+        odom.pose.pose.position.y = y;
+        odom.pose.pose.orientation.z = theta;
+        double w = purepursuit.compute_angvel(x, y, theta);
+        steer.xVehicle(auto_vx, w);
+
     }
     else {
         steer.stop();
@@ -78,7 +99,6 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
 }
 
 void radCb(const msgs::FourWheelSteerRad &rad_msg) {
-    double angVel[4], angle[4];
     for (int i = 0; i < 4; i++) {
         angVel[i] = rad_msg.angVel[i];
         angle[i]  = rad_msg.angle[i];
@@ -149,6 +169,7 @@ int main(int argc, char **argv) {
     ros::Subscriber rad_sub = nh.subscribe("rad", 1, radCb);
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
+    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 1);
 
     sleep(5);
     setGain();
@@ -159,6 +180,7 @@ int main(int argc, char **argv) {
         ros::spinOnce();
         setTarget();
         target_pub.publish(target);
+        odom_pub.publish(odom);
         loop_rate.sleep();
     }
     return 0;
