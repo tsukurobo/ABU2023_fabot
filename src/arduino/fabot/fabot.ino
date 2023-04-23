@@ -44,6 +44,12 @@ bool Stop = true;
 std_msgs::Int16MultiArray duty_msg, enc_msg;
 msgs::FourWheelSteerRad rad_msg;
 
+double enc_diff_to_rad(uint8_t num, bool direction, uint CPR = 2048) {
+  double rad = Inc_enc::get_diff(num) / (double)CPR * TWO_PI;
+  if (!direction) rad *= -1;
+  return rad;
+}
+
 
 /*アーム制御のコールバック関数*/
 void loadRingCallback(const fabot_msgs::ArmMsg &arm_msg) {
@@ -191,7 +197,7 @@ void loop()
     enc_msg.data[i+4] = Abs_enc::get(absEncNum[i]);
     duty_msg.data[i] = DC_motor::get(driveMotorNum[i]);
     duty_msg.data[i+4] = DC_motor::get(steerMotorNum[i]);
-    rad_msg.angVel[i] = encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR);
+    rad_msg.angVel[i] = enc_diff_to_rad(i, false);
     rad_msg.angle[i]  = encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
   }
   // enc_pub.publish(&enc_msg);
