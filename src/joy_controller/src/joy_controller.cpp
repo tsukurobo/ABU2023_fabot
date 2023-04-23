@@ -37,7 +37,7 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         vy =  joy_msg.axes[VY_AXE] * joy_msg.axes[VY_AXE] * copysign(v_max, joy_msg.axes[VY_AXE]);
         vx =  joy_msg.axes[VX_AXE] * joy_msg.axes[VX_AXE] * copysign(v_max, joy_msg.axes[VX_AXE]);
         wx  = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(w_max, joy_msg.axes[WX_AXE]);
-        wy  = -wx;
+        wy  = -joy_msg.axes[WY_AXE] * joy_msg.axes[WY_AXE] * copysign(w_max, joy_msg.axes[WY_AXE]);
         // vy =  joy_msg.axes[VY_AXE] * v_max;
         // vx =  joy_msg.axes[VX_AXE] * v_max;
         // wx  = joy_msg.axes[WX_AXE] * w_max;
