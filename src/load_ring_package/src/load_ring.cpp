@@ -3,10 +3,10 @@
 #include<sensor_msgs/Joy.h>
 
 #define ENABLE_BUTTON 5
-#define CLOSE_HAND_BUTTON 0 //Xボタン
-#define OPEN_HAND_BUTTON 3 //Bボタン
-#define UP_ARM_BUTTON 1 //Yボタン
-#define DOWN_ARM_BUTTON 2 //Aボタン
+#define CLOSE_HAND_BUTTON 2 //Xボタン
+#define OPEN_HAND_BUTTON 1 //Bボタン
+#define UP_ARM_BUTTON 3 //Yボタン
+#define DOWN_ARM_BUTTON 0 //Aボタン
 #define HAND_DUTY 470 //Arduinoに指定するDuty
 #define ARM_DUTY 470
 

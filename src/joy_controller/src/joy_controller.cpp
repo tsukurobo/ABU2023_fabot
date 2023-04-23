@@ -8,11 +8,12 @@
 #define ENABLE_BUTTON 5
 #define VY_AXE 0
 #define VX_AXE 1
-#define WX_AXE 2
-#define WY_AXE 3
-#define XVEHICLE_AXE 5
-#define YVEHICLE_AXE 4
-#define ROTATE_AXE 5
+#define WX_AXE 3
+#define WY_AXE 4
+#define XVEHICLE_AXE 7
+#define YVEHICLE_AXE 6
+#define ROTATE_BUTTON_0 6
+#define ROTATE_BUTTON_1 7
 
 using namespace std;
 
@@ -33,10 +34,14 @@ double Pkp[4], Pki[4], Pkd[4];
 void joyCb(const sensor_msgs::Joy &joy_msg) {
     if (joy_msg.buttons[ENABLE_BUTTON]) {
         target.stop = false;
-        vy =  joy_msg.axes[VY_AXE] * v_max;
-        vx =  joy_msg.axes[VX_AXE] * v_max;
-        wx  = joy_msg.axes[WX_AXE] * w_max;
-        wy  = -joy_msg.axes[WY_AXE] * w_max;
+        vy =  joy_msg.axes[VY_AXE] * joy_msg.axes[VY_AXE] * copysign(v_max, joy_msg.axes[VY_AXE]);
+        vx =  joy_msg.axes[VX_AXE] * joy_msg.axes[VX_AXE] * copysign(v_max, joy_msg.axes[VX_AXE]);
+        wx  = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(w_max, joy_msg.axes[WX_AXE]);
+        wy  = -joy_msg.axes[WY_AXE] * joy_msg.axes[WY_AXE] * copysign(w_max, joy_msg.axes[WY_AXE]);
+        // vy =  joy_msg.axes[VY_AXE] * v_max;
+        // vx =  joy_msg.axes[VX_AXE] * v_max;
+        // wx  = joy_msg.axes[WX_AXE] * w_max;
+        // wy  = -joy_msg.axes[WY_AXE] * w_max;
         ROS_INFO_STREAM(mode);
 
         if (mode == "XVEHICLE") {
@@ -58,17 +63,17 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         ROS_INFO_STREAM("STOP");
     }
 
-    if (joy_msg.axes[XVEHICLE_AXE] == 1) {
+    if (joy_msg.axes[XVEHICLE_AXE] == 1 || joy_msg.axes[XVEHICLE_AXE] == -1) {
         mode = "XVEHICLE";
         ROS_INFO_STREAM("MODE CHANGE: XVEHCILE");
-    }
-    else if (joy_msg.axes[ROTATE_AXE] == -1) {
-        mode = "ROTATE";
-        ROS_INFO_STREAM("MODE CHANGE: ROTATE");
     }
     else if (joy_msg.axes[YVEHICLE_AXE] == 1 || joy_msg.axes[YVEHICLE_AXE] == -1) {
         mode = "YVEHICLE";
         ROS_INFO_STREAM("MODE CHANGE: YVEHCILE");
+    }
+    else if (joy_msg.buttons[ROTATE_BUTTON_0] == 1 || joy_msg.buttons[ROTATE_BUTTON_1] == 1) {
+        mode = "ROTATE";
+        ROS_INFO_STREAM("MODE CHANGE: ROTATE");
     }
 }
 

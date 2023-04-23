@@ -21,7 +21,7 @@ ros::NodeHandle nh;
 #define DO_UP 1
 #define DO_DOWN 2
 #define ARM_ENC 4 // 腕のアブソリュートエンコーダ番号
-#define UP_LIMIT 12000 // adbotの高さに合わせてあとで調整する
+#define UP_LIMIT 12400 // adbotの高さに合わせてあとで調整する
 #define DOWN_LIMIT 5893
 
 int hand_state = 0;
@@ -38,7 +38,7 @@ const uint8_t incEncNum[] = {2, 1, 0, 3}, absEncNum[] = {2, 1, 0, 3};
 float angle[4], angVel[4];
 float Vkp[4], Vki[4], Vkd[4], Pkp[4], Pki[4], Pkd[4];
 const uint16_t INC_CPR = 2048;
-const double steerCapableDuty = 0.3, driveCapableDuty[] = {0.312, 0.3, 0.325, 0.3};
+const double steerCapableDuty = 0.4, driveCapableDuty[] = {0.312, 0.3, 0.325, 0.3};
 bool Stop = true;
 
 std_msgs::Int16MultiArray duty_msg, enc_msg;
