@@ -1,9 +1,8 @@
 #include "PurePursuit.h"
 
-PurePursuit::PurePursuit(point target_coordinates[], uint target_num, double look_ahead_dist, double initial_x, double initial_y, double initial_theta, double finish_dist)
+PurePursuit::PurePursuit(point target_coordinates[], uint target_num, double look_ahead_dist, double finish_dist)
     : target_num(target_num), look_ahead_dist(abs(look_ahead_dist)), finish_dist(abs(finish_dist))
 {
-    x = initial_x; y = initial_y; theta = initial_theta;
     for (int i = 0; i < target_num; i++) {
         this->target_coordinates[i].x = target_coordinates[i].x;
         this->target_coordinates[i].y = target_coordinates[i].y;
@@ -11,7 +10,7 @@ PurePursuit::PurePursuit(point target_coordinates[], uint target_num, double loo
     for (int i = 0; i < target_num - 1; i++) {
         double dist = sqrt(pow(target_coordinates[i+1].x - target_coordinates[i].x, 2) + pow(target_coordinates[i+1].y - target_coordinates[i].y, 2));
         pass_unit[i].x = (target_coordinates[i+1].x - target_coordinates[i].x) / dist;
-        pass_unit[i].y = target_coordinates[i+1].y - target_coordinates[i].y / dist;
+        pass_unit[i].y = (target_coordinates[i+1].y - target_coordinates[i].y) / dist;
     }
 }
 
@@ -45,7 +44,7 @@ bool PurePursuit::is_inside(uint target_index, point intersection) {
     return angle > M_PI_2;
 }
 
-double PurePursuit::compute_angvel(double x, double y, double theta) {
+double PurePursuit::compute_angerr(double x, double y, double theta) {
     // 最後の線分の端点に到達したら、angvelを0にする
     if (calc_dist({x, y}, target_coordinates[target_num - 1]) < finish_dist) {
         finish_flag = true;
@@ -68,31 +67,38 @@ double PurePursuit::compute_angvel(double x, double y, double theta) {
             }
         }
     }
+    // cout << "min_num: " << min_num << endl;
+    // cout << "min_dist: " << min_dist << endl;
+    // cout << "min_intersection: " << min_intersection.x << ", " << min_intersection.y << endl;
 
-    // 求めた距離とlook_ahead_distの三平方の定理を用いて、lookaheadpointを求める
-    point lookaheadpoint;
+    // look_ahead_pointを求める
+    point look_ahead_point;
     if (min_num == -1) {
-        // 線分の端点の内側にない場合は、最も近い線分の端点をlookaheadpointとする
+        // 線分の端点の内側にない場合は、最も近い線分の端点をlook_ahead_pointとする
         double dist1 = calc_dist({x, y}, target_coordinates[0]);
         double dist2 = calc_dist({x, y}, target_coordinates[target_num - 1]);
         if (dist1 < dist2) {
-            lookaheadpoint = target_coordinates[0];
+            look_ahead_point = target_coordinates[0];
         } else {
-            lookaheadpoint = target_coordinates[target_num - 1];
+            look_ahead_point = target_coordinates[target_num - 1];
         }
-    } else {
-        // 線分の端点の内側にある場合は、垂線の足を通る直線とlook_ahead_distの三平方の定理を用いて、lookaheadpointを求める
-        lookaheadpoint.x = min_intersection.x + sqrt(pow(look_ahead_dist, 2) - pow(min_dist, 2)) * pass_unit[min_num].x;
-        lookaheadpoint.y = min_intersection.y + sqrt(pow(look_ahead_dist, 2) - pow(min_dist, 2)) * pass_unit[min_num].y;
+    } 
+    else {
+        // 線分の端点の内側にある場合は、垂線の交点からlook_ahead_distだけ進んだところをlook_ahead_pointとする
+        look_ahead_point.x = min_intersection.x + look_ahead_dist * pass_unit[min_num].x;
+        look_ahead_point.y = min_intersection.y + look_ahead_dist * pass_unit[min_num].y;
 
-        // lookaheadpointが線分の内側にない場合は、次の線分の垂線の足を通る直線とlook_ahead_distの三平方の定理を用いて、lookaheadpointを求める
-        if (!is_inside(min_num, lookaheadpoint)) {
-            // あとで書く
+        // look_ahead_pointが線分の内側にない場合は、線分の終点とlook_ahead_pointの距離だけ次の線分に沿って進め、look_ahead_pointを求める
+        if (!is_inside(min_num, look_ahead_point)) {
+            double dist = calc_dist(look_ahead_point, target_coordinates[min_num + 1]);
+            look_ahead_point.x = target_coordinates[min_num + 1].x + dist * pass_unit[min_num + 1].x;
+            look_ahead_point.y = target_coordinates[min_num + 1].y + dist * pass_unit[min_num + 1].y;
         }
     }
+    // cout << "look_ahead_point: " << look_ahead_point.x << ", " << look_ahead_point.y << endl;
 
-    // 現在位置とlookaheadpointから方位誤差を求める。
-    double angvel = atan2(lookaheadpoint.y - y, lookaheadpoint.x - x) - theta;
+    // 現在位置とlook_ahead_pointから方位誤差を求める。
+    double angerr = atan2(look_ahead_point.y - y, look_ahead_point.x - x) - theta;
 
-    return angvel;
+    return angerr;
 }
