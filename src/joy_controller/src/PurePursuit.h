@@ -24,22 +24,24 @@ private:
     point target_coordinates[100];
     vec pass_unit[100];
     const uint target_num;
-    const double look_ahead_dist, finish_dist;
-    // double calc_dist(point a, point b);
-    // vec calc_unit(point a, point b);
-    // double calc_angle(point current, point target1, point target2);
-    // bool is_inside(uint target_index, point intersection);
-    // double perpendicular_dist(point current, uint target_index, point &intersection);
-public:
-    PurePursuit(point target_coordinates[], uint target_num, double look_ahead_dist, double finish_dist = 0.1);
-    double compute_angerr(double x, double y, double theta);
-    bool get_finish_flag() {return finish_flag;}
-
+    double look_ahead_dist;
+    const double finish_dist;
     double calc_dist(point a, point b);
     vec calc_unit(point a, point b);
     double calc_angle(point current, point target1, point target2);
-    bool is_inside(uint target_index, point intersection);
+    bool is_inside(point intersection, uint target_index);
     double perpendicular_dist(point current, uint target_index, point &intersection);
+public:
+    PurePursuit(point target_coordinates[], uint target_num, double look_ahead_dist, double finish_dist = 0.1);
+    double compute_angerr(double x, double y, double theta);
+    void set_look_ahead_dist(double look_ahead_dist) {this->look_ahead_dist = abs(look_ahead_dist);}
+    bool get_finish_flag() {return finish_flag;}
+
+    // double calc_dist(point a, point b);
+    // vec calc_unit(point a, point b);
+    // double calc_angle(point current, point target1, point target2);
+    // bool is_inside(point intersection, uint target_index);
+    // double perpendicular_dist(point current, uint target_index, point &intersection);
 };
 
 #endif

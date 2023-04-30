@@ -4,13 +4,10 @@ PurePursuit::PurePursuit(point target_coordinates[], uint target_num, double loo
     : target_num(target_num), look_ahead_dist(abs(look_ahead_dist)), finish_dist(abs(finish_dist))
 {
     for (int i = 0; i < target_num; i++) {
-        this->target_coordinates[i].x = target_coordinates[i].x;
-        this->target_coordinates[i].y = target_coordinates[i].y;
+        this->target_coordinates[i] = target_coordinates[i];
     }
     for (int i = 0; i < target_num - 1; i++) {
-        double dist = sqrt(pow(target_coordinates[i+1].x - target_coordinates[i].x, 2) + pow(target_coordinates[i+1].y - target_coordinates[i].y, 2));
-        pass_unit[i].x = (target_coordinates[i+1].x - target_coordinates[i].x) / dist;
-        pass_unit[i].y = (target_coordinates[i+1].y - target_coordinates[i].y) / dist;
+        pass_unit[i] = calc_unit(target_coordinates[i], target_coordinates[i + 1]);
     }
 }
 
@@ -39,16 +36,17 @@ double PurePursuit::perpendicular_dist(point current, uint target_index, point &
     return d;
 }
 
-bool PurePursuit::is_inside(uint target_index, point intersection) {
+bool PurePursuit::is_inside(point intersection, uint target_index) {
     double angle = calc_angle(intersection, target_coordinates[target_index], target_coordinates[target_index + 1]);
     return angle > M_PI_2;
 }
 
 double PurePursuit::compute_angerr(double x, double y, double theta) {
-    // 最後の線分の端点に到達したら、angvelを0にする
+    // 最後の線分の端点に到達したら、最終点との方位誤差を返す
     if (calc_dist({x, y}, target_coordinates[target_num - 1]) < finish_dist) {
         finish_flag = true;
-        return 0.0;
+        double angerr = atan2(target_coordinates[target_num - 1].y - y, target_coordinates[target_num - 1].x - x) - theta;
+        return angerr;
     }
 
     // 現在位置と最も距離の短い線分とその交点を求める
@@ -60,7 +58,7 @@ double PurePursuit::compute_angerr(double x, double y, double theta) {
         // 最小距離を更新する
         if (dist < min_dist) {
             // 垂線の足が線分の端点の内側にある場合
-            if (is_inside(i, intersection)) {
+            if (is_inside(intersection, i)) {
                 min_num = i;
                 min_dist = dist;
                 min_intersection = intersection;
@@ -89,7 +87,7 @@ double PurePursuit::compute_angerr(double x, double y, double theta) {
         look_ahead_point.y = min_intersection.y + look_ahead_dist * pass_unit[min_num].y;
 
         // look_ahead_pointが線分の内側にない場合は、線分の終点とlook_ahead_pointの距離だけ次の線分に沿って進め、look_ahead_pointを求める
-        if (!is_inside(min_num, look_ahead_point)) {
+        if (!is_inside(look_ahead_point, min_num)) {
             double dist = calc_dist(look_ahead_point, target_coordinates[min_num + 1]);
             look_ahead_point.x = target_coordinates[min_num + 1].x + dist * pass_unit[min_num + 1].x;
             look_ahead_point.y = target_coordinates[min_num + 1].y + dist * pass_unit[min_num + 1].y;
