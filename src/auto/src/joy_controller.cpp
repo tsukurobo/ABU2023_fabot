@@ -4,6 +4,10 @@
 #include <msgs/FourWheelSteerPIDGain.h>
 #include <sensor_msgs/Joy.h>
 #include "FourWheelSteer.h"
+
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include "PurePursuit.h"
 
 #define ENABLE_BUTTON 5
@@ -38,7 +42,7 @@ double x, y, theta;
 
 point pass[] = {{-0.01, 0.0}, {5.0, 0.0}, {5.0, 5.0}, {0.0, 5.0}};
 uint pass_num = 4;
-double look_ahead_dist = 0.5;
+double look_ahead_dist = 1.0;
 PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
 double auto_vx = 0.3;
 
@@ -93,6 +97,27 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         mode = "ROTATE";
         ROS_INFO_STREAM("MODE CHANGE: ROTATE");
     }
+}
+
+void getCoodinate() {
+    static tf2_ros::Buffer tfBuffer;
+    static tf2_ros::TransformListener tfListener(tfBuffer);
+    geometry_msgs::TransformStamped transformStamped;
+    try {
+        transformStamped = tfBuffer.lookupTransform("odom", "base_link", ros::Time(0));
+    }
+    catch (tf2::TransformException &ex) {
+        ROS_WARN("%s", ex.what());
+        // ros::Duration(1.0).sleep();
+        return;
+    }
+    x = transformStamped.transform.translation.x;
+    y = transformStamped.transform.translation.y;
+
+    tf2::Quaternion q(transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z, transformStamped.transform.rotation.w);
+    tf2::Matrix3x3 m(q);
+    double roll, pitch;
+    m.getRPY(roll, pitch, theta);
 }
 
 void setTarget() {
@@ -169,6 +194,8 @@ int main(int argc, char **argv) {
 
         setTarget();
         target_pub.publish(target);
+
+        getCoodinate();
 
         loop_rate.sleep();
     }
