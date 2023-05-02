@@ -1,5 +1,5 @@
 <launch>
-    <arg name="joy_dev"         default="/dev/input/js0"/>
+    <arg name="joy_dev"         default="/dev/input/js2"/>
     <arg name="joy_node"        default="true"/>
     <arg name="joy_controller"  default="true"/>
     <arg name="odometry"        default="true"/>
@@ -59,7 +59,7 @@
     <group if="$(arg arduino)">
         <node name="arduino" pkg="rosserial_python" type="serial_node.py" output="screen" required="true">
             <param name="port" value="/dev/ttyACM0"/>
-            <param name="baud" value="8000000"/>
+            <param name="baud" value="4000000"/>
         </node>
     </group>
 </launch>

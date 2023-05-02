@@ -73,6 +73,15 @@ public:
             return AngVel[i];
         return 0.0;
     }
+    double getX() {
+        return x;
+    }
+    double getY() {
+        return y;
+    }
+    double getTheta() {
+        return theta;
+    }
     void getOdom(double &x, double &y, double &theta) {
         x = this->x;
         y = this->y;

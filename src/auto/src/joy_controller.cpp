@@ -10,12 +10,12 @@
 #define AUTO_BUTTON 4
 #define VY_AXE 0
 #define VX_AXE 1
-#define WX_AXE 3
-#define WY_AXE 4
-#define XVEHICLE_AXE 7
-#define YVEHICLE_AXE 6
-#define ROTATE_BUTTON_0 6
-#define ROTATE_BUTTON_1 7
+#define WX_AXE 2//3
+#define WY_AXE 3//4
+#define XVEHICLE_AXE 5//7
+#define YVEHICLE_AXE 4//6
+#define ROTATE_BUTTON_0 10//6
+#define ROTATE_BUTTON_1 11//7
 
 using namespace std;
 
@@ -36,11 +36,11 @@ double Pkp[4], Pki[4], Pkd[4];
 double angVel[4], angle[4];
 double x, y, theta;
 
-point pass[] = {{-1.0, 0.0}, {4.75, 0.0}};
-uint pass_num = 2;
-double look_ahead_dist = 0.2;
+point pass[] = {{-0.01, 0.0}, {5.0, 0.0}, {5.0, 5.0}, {0.0, 5.0}};
+uint pass_num = 4;
+double look_ahead_dist = 0.5;
 PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
-double auto_vx = 0.05;
+double auto_vx = 0.3;
 
 void joyCb(const sensor_msgs::Joy &joy_msg) {
     if (joy_msg.buttons[ENABLE_BUTTON]) {
@@ -67,6 +67,11 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     else if (joy_msg.buttons[AUTO_BUTTON]) {
         target.stop = false;
         double a = purepursuit.compute_angerr(x, y, theta);
+        if (purepursuit.get_finish_flag()) {
+            steer.stop();
+            target.stop = true;
+            ROS_INFO_STREAM("AUTO FINISH");
+        }
         double w = 2*auto_vx*sin(a)/look_ahead_dist;
         steer.xVehicle(auto_vx, w);
     }

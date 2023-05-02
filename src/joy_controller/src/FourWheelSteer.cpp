@@ -169,7 +169,9 @@ bool FourWheelSteer::anomalyDetect(double angVel[4], double angle[4]) {
 
 // 縦横比が異なる場合に対応できていない
 void FourWheelSteer::calcOdom(double angVel[4], double angle[4]) {
+    static double a = atan2(DistLRWheel, DistFBWheel);
     static ros::Time prev_time = ros::Time::now();
+
     ros::Time now_time = ros::Time::now();
     double dt = now_time.toSec() - prev_time.toSec();
     prev_time = now_time;
@@ -188,8 +190,9 @@ void FourWheelSteer::calcOdom(double angVel[4], double angle[4]) {
 
     x += (vel[0]*cos(theta+angle[0]) + vel[1]*cos(theta+angle[1]) + vel[2]*cos(theta+angle[2]) + vel[3]*cos(theta+angle[3])) / 4.0 * dt;
     y += (vel[0]*sin(theta+angle[0]) + vel[1]*sin(theta+angle[1]) + vel[2]*sin(theta+angle[2]) + vel[3]*sin(theta+angle[3])) / 4.0 * dt;
-    theta += ROOT2*(vel[0]*(-cos(angle[0])+sin(angle[0])) + 
-                    vel[1]*(-cos(angle[1])-sin(angle[1])) + 
-                    vel[2]*( cos(angle[2])-sin(angle[2])) + 
-                    vel[3]*( cos(angle[3])+sin(angle[3]))) / 8.0 / DistWheelCenter * dt;
+    // theta += ROOT2*(vel[0]*(-cos(angle[0])+sin(angle[0])) + 
+    //                 vel[1]*(-cos(angle[1])-sin(angle[1])) + 
+    //                 vel[2]*( cos(angle[2])-sin(angle[2])) + 
+    //                 vel[3]*( cos(angle[3])+sin(angle[3]))) / 8.0 / DistWheelCenter * dt;
+    theta += (-vel[0]*sin(a - angle[0]) - vel[1]*sin(a + angle[1]) + vel[2]*sin(a - angle[2]) + vel[3]*sin(a + angle[3])) / 4.0 / DistWheelCenter * dt;
 }
