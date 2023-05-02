@@ -11,6 +11,7 @@
 #include "fabot_msgs/ArmMsg.h"
 
 ros::NodeHandle nh;
+#define BAUDRATE 8000000
 
 /*アーム制御のグローバル変数*/
 #define HAND_MOTOR 11  // 手のモーター番号
@@ -45,7 +46,7 @@ std_msgs::Int16MultiArray duty_msg, enc_msg;
 msgs::FourWheelSteerRad rad_msg;
 
 double enc_diff_to_rad(uint8_t num, bool direction, uint CPR = 2048) {
-  double rad = Inc_enc::get_diff(num) / (double)CPR * TWO_PI;
+  double rad = Inc_enc::get_diff(num) / (double)CPR * TWO_PI / 4.0 * 1000.0; // rad/s
   if (!direction) rad *= -1;
   return rad;
 }
@@ -99,7 +100,7 @@ void setup()
 {
   Cubic::begin();
   
-  nh.getHardware()->setBaud(2000000);
+  nh.getHardware()->setBaud(BAUDRATE);
   nh.initNode();
 
   nh.subscribe(sub);
@@ -195,9 +196,11 @@ void loop()
   for(int i = 0; i < 4; i++) {
     enc_msg.data[i]   = Inc_enc::get(incEncNum[i]);
     enc_msg.data[i+4] = Abs_enc::get(absEncNum[i]);
+
     duty_msg.data[i] = DC_motor::get(driveMotorNum[i]);
     duty_msg.data[i+4] = DC_motor::get(steerMotorNum[i]);
-    rad_msg.angVel[i] = enc_diff_to_rad(i, false);
+
+    rad_msg.angVel[i] = enc_diff_to_rad(incEncNum[i], false);
     rad_msg.angle[i]  = encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
   }
   // enc_pub.publish(&enc_msg);
