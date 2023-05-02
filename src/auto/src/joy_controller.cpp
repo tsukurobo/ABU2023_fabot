@@ -9,6 +9,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include "PurePursuit.h"
+#include "visualization_msgs/MarkerArray.h"
 
 #define ENABLE_BUTTON 5
 #define AUTO_BUTTON 4
@@ -40,9 +41,9 @@ double Pkp[4], Pki[4], Pkd[4];
 double angVel[4], angle[4];
 double x, y, theta;
 
-point pass[] = {{-0.01, 0.0}, {5.0, 0.0}, {5.0, 5.0}, {0.0, 5.0}};
-uint pass_num = 4;
-double look_ahead_dist = 1.0;
+point pass[] = {{-0.01, 0.0}, {4.0, 0.0}, {4.0, 3.0}, {8.0, 3.0}, {8.0, 0.0}};
+uint pass_num = 5;
+double look_ahead_dist = 2.0;
 PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
 double auto_vx = 0.3;
 
@@ -183,6 +184,7 @@ int main(int argc, char **argv) {
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
+    ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("marker", 1);
 
     sleep(5);
     setGain();
@@ -196,6 +198,9 @@ int main(int argc, char **argv) {
         target_pub.publish(target);
 
         getCoodinate();
+
+        visualization_msgs::MarkerArray marker_array = purepursuit.get_marker("odom");
+        marker_pub.publish(marker_array);
 
         loop_rate.sleep();
     }

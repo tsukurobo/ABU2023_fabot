@@ -68,9 +68,9 @@ double PurePursuit::compute_angerr(double x, double y, double theta) {
     // cout << "min_num: " << min_num << endl;
     // cout << "min_dist: " << min_dist << endl;
     // cout << "min_intersection: " << min_intersection.x << ", " << min_intersection.y << endl;
+    near_point = min_intersection;
 
     // look_ahead_pointを求める
-    point look_ahead_point;
     if (min_num == -1) {
         // 線分の端点の内側にない場合は、最も近い線分の端点をlook_ahead_pointとする
         double dist1 = calc_dist({x, y}, target_coordinates[0]);
@@ -99,4 +99,50 @@ double PurePursuit::compute_angerr(double x, double y, double theta) {
     double angerr = atan2(look_ahead_point.y - y, look_ahead_point.x - x) - theta;
 
     return angerr;
+}
+
+visualization_msgs::MarkerArray PurePursuit::get_marker(string frame_id) {
+    visualization_msgs::MarkerArray marker_array;
+
+    visualization_msgs::Marker path_marker;
+    path_marker.header.frame_id = frame_id;
+    path_marker.header.stamp = ros::Time::now();
+    path_marker.ns = "path";
+    path_marker.action = visualization_msgs::Marker::ADD;
+    path_marker.type = visualization_msgs::Marker::LINE_STRIP;
+    path_marker.scale.x = 0.05;
+    path_marker.color.g = path_marker.color.a = 1.0;
+    for(int i = 0; i < target_num; i++) {
+        geometry_msgs::Point p;
+        p.x = target_coordinates[i].x;
+        p.y = target_coordinates[i].y;
+        path_marker.points.push_back(p);
+    }
+    marker_array.markers.push_back(path_marker);
+
+    visualization_msgs::Marker near_point_marker;
+    near_point_marker.header.frame_id = frame_id;
+    near_point_marker.header.stamp = ros::Time::now();
+    near_point_marker.ns = "near_point";
+    near_point_marker.action = visualization_msgs::Marker::ADD;
+    near_point_marker.type = visualization_msgs::Marker::SPHERE;
+    near_point_marker.scale.x = near_point_marker.scale.y = near_point_marker.scale.z = 0.1;
+    near_point_marker.color.b = near_point_marker.color.a = 1.0;
+    near_point_marker.pose.position.x = near_point.x;
+    near_point_marker.pose.position.y = near_point.y;
+    marker_array.markers.push_back(near_point_marker);
+
+    visualization_msgs::Marker look_ahead_point_marker;
+    look_ahead_point_marker.header.frame_id = frame_id;
+    look_ahead_point_marker.header.stamp = ros::Time::now();
+    look_ahead_point_marker.ns = "look_ahead_point";
+    look_ahead_point_marker.action = visualization_msgs::Marker::ADD;
+    look_ahead_point_marker.type = visualization_msgs::Marker::SPHERE;
+    look_ahead_point_marker.scale.x = look_ahead_point_marker.scale.y = look_ahead_point_marker.scale.z = 0.1;
+    look_ahead_point_marker.color.r = look_ahead_point_marker.color.a = 1.0;
+    look_ahead_point_marker.pose.position.x = look_ahead_point.x;
+    look_ahead_point_marker.pose.position.y = look_ahead_point.y;
+    marker_array.markers.push_back(look_ahead_point_marker);
+
+    return marker_array;
 }

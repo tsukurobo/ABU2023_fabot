@@ -9,6 +9,8 @@ using namespace std;
 #define ROOT2 1.4142135623730950488016887242097 // √2
 #define M_PI_6 0.52359877559829887307710723054658 // π/6
 
+#include "visualization_msgs/MarkerArray.h"
+
 struct point {
     double x, y;
 };
@@ -23,6 +25,7 @@ private:
     double x = 0.0, y = 0.0, theta = 0.0;
     point target_coordinates[100];
     vec pass_unit[100];
+    point near_point, look_ahead_point;
     const uint target_num;
     double look_ahead_dist;
     const double finish_dist;
@@ -36,6 +39,7 @@ public:
     double compute_angerr(double x, double y, double theta);
     void set_look_ahead_dist(double look_ahead_dist) {this->look_ahead_dist = abs(look_ahead_dist);}
     bool get_finish_flag() {return finish_flag;}
+    visualization_msgs::MarkerArray get_marker(string frame_id);
 
     // double calc_dist(point a, point b);
     // vec calc_unit(point a, point b);
