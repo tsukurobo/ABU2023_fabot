@@ -11,7 +11,7 @@
 #include "fabot_msgs/ArmMsg.h"
 
 ros::NodeHandle nh;
-#define BAUDRATE 4000000
+#define BAUDRATE 8000000
 
 /*アーム制御のグローバル変数*/
 #define HAND_MOTOR 11  // 手のモーター番号
@@ -100,7 +100,7 @@ void setup()
 {
   Cubic::begin();
   
-  nh.getHardware()->setBaud(4000000);
+  nh.getHardware()->setBaud(BAUDRATE);
   nh.initNode();
 
   nh.subscribe(sub);

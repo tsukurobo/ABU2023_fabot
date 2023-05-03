@@ -5,6 +5,7 @@
     <arg name="odometry"        default="true"/>
     <arg name="load_ring"       default="true"/>
     <arg name="arduino"         default="true"/>
+    <arg name="front_laser"     default="true"/>
 
     <group if="$(arg joy_node)">
         <node name="joy_node" pkg="joy" type="joy_node" required="true">
@@ -59,7 +60,11 @@
     <group if="$(arg arduino)">
         <node name="arduino" pkg="rosserial_python" type="serial_node.py" output="screen" required="true">
             <param name="port" value="/dev/ttyACM0"/>
-            <param name="baud" value="4000000"/>
+            <param name="baud" value="8000000"/>
         </node>
+    </group>
+
+    <group if="$(arg front_laser)">
+        <include file="$(find ydlidar_ros_driver)/launch/fabot_X2.launch"/>
     </group>
 </launch>
