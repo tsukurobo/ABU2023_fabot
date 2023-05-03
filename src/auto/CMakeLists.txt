@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(joy_controller)
+project(auto)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf2
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,10 +50,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#  SteerEncoder.msg
-#)
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -104,8 +107,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES joy_controller
-#  CATKIN_DEPENDS msgs roscpp rospy std_msgs
+#  LIBRARIES auto
+#  CATKIN_DEPENDS roscpp rospy std_msgs tf2 tf2_ros
 #  DEPENDS system_lib
 )
 
@@ -122,9 +125,10 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/joy_controller.cpp
+#   src/${PROJECT_NAME}/auto.cpp
 # )
 add_executable(joy_controller src/joy_controller.cpp)
+add_executable(odometry src/odometry.cpp)
 add_library(FourWheelSteer src/FourWheelSteer.cpp)
 add_library(PurePursuit src/PurePursuit.cpp)
 
@@ -136,7 +140,7 @@ add_library(PurePursuit src/PurePursuit.cpp)
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/joy_controller_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/auto_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,6 +160,10 @@ target_link_libraries(joy_controller
   ${catkin_LIBRARIES}
   FourWheelSteer
   PurePursuit
+)
+target_link_libraries(odometry
+  ${catkin_LIBRARIES}
+  FourWheelSteer
 )
 
 #############
@@ -205,7 +213,7 @@ target_link_libraries(joy_controller
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_joy_controller.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_auto.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

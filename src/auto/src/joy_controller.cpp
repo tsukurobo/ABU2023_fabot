@@ -4,20 +4,23 @@
 #include <msgs/FourWheelSteerPIDGain.h>
 #include <sensor_msgs/Joy.h>
 #include "FourWheelSteer.h"
+
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include "PurePursuit.h"
-#include <msgs/myOdom.h>
-#include <nav_msgs/Odometry.h>
+#include "visualization_msgs/MarkerArray.h"
 
 #define ENABLE_BUTTON 5
 #define AUTO_BUTTON 4
 #define VY_AXE 0
 #define VX_AXE 1
-#define WX_AXE 3
-#define WY_AXE 4
-#define XVEHICLE_AXE 7
-#define YVEHICLE_AXE 6
-#define ROTATE_BUTTON_0 6
-#define ROTATE_BUTTON_1 7
+#define WX_AXE 2//3
+#define WY_AXE 3//4
+#define XVEHICLE_AXE 5//7
+#define YVEHICLE_AXE 4//6
+#define ROTATE_BUTTON_0 10//6
+#define ROTATE_BUTTON_1 11//7
 
 using namespace std;
 
@@ -37,13 +40,12 @@ double Pkp[4], Pki[4], Pkd[4];
 
 double angVel[4], angle[4];
 double x, y, theta;
-nav_msgs::Odometry odom;
 
-point pass[] = {{-1.0, 0.0}, {4.75, 0.0}};
-uint pass_num = 2;
-double look_ahead_dist = 0.2;
+point pass[] = {{-0.01, 0.0}, {4.0, 0.0}, {4.0, 3.0}, {8.0, 3.0}, {8.0, 0.0}};
+uint pass_num = 5;
+double look_ahead_dist = 2.0;
 PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
-double auto_vx = 0.05;
+double auto_vx = 0.3;
 
 void joyCb(const sensor_msgs::Joy &joy_msg) {
     if (joy_msg.buttons[ENABLE_BUTTON]) {
@@ -70,6 +72,11 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     else if (joy_msg.buttons[AUTO_BUTTON]) {
         target.stop = false;
         double a = purepursuit.compute_angerr(x, y, theta);
+        if (purepursuit.get_finish_flag()) {
+            steer.stop();
+            target.stop = true;
+            ROS_INFO_STREAM("AUTO FINISH");
+        }
         double w = 2*auto_vx*sin(a)/look_ahead_dist;
         steer.xVehicle(auto_vx, w);
     }
@@ -93,16 +100,25 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     }
 }
 
-void radCb(const msgs::FourWheelSteerRad &rad_msg) {
-    for (int i = 0; i < 4; i++) {
-        angVel[i] = rad_msg.angVel[i];
-        angle[i]  = rad_msg.angle[i];
+void getCoodinate() {
+    static tf2_ros::Buffer tfBuffer;
+    static tf2_ros::TransformListener tfListener(tfBuffer);
+    geometry_msgs::TransformStamped transformStamped;
+    try {
+        transformStamped = tfBuffer.lookupTransform("odom", "base_link", ros::Time(0));
     }
-    steer.calcOdom(angVel, angle);
-    steer.getOdom(x, y, theta);
-    odom.pose.pose.position.x = x;
-    odom.pose.pose.position.y = y;
-    odom.pose.pose.orientation.z = theta;
+    catch (tf2::TransformException &ex) {
+        ROS_WARN("%s", ex.what());
+        // ros::Duration(1.0).sleep();
+        return;
+    }
+    x = transformStamped.transform.translation.x;
+    y = transformStamped.transform.translation.y;
+
+    tf2::Quaternion q(transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z, transformStamped.transform.rotation.w);
+    tf2::Matrix3x3 m(q);
+    double roll, pitch;
+    m.getRPY(roll, pitch, theta);
 }
 
 void setTarget() {
@@ -166,10 +182,9 @@ int main(int argc, char **argv) {
     target.stop = true;
 
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
-    ros::Subscriber rad_sub = nh.subscribe("rad", 1, radCb);
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
-    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 1);
+    ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("marker", 1);
 
     sleep(5);
     setGain();
@@ -178,9 +193,15 @@ int main(int argc, char **argv) {
     ros::Rate loop_rate(freq);
     while (ros::ok()) {
         ros::spinOnce();
+
         setTarget();
         target_pub.publish(target);
-        odom_pub.publish(odom);
+
+        getCoodinate();
+
+        visualization_msgs::MarkerArray marker_array = purepursuit.get_marker("odom");
+        marker_pub.publish(marker_array);
+
         loop_rate.sleep();
     }
     return 0;

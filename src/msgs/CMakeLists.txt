@@ -54,6 +54,7 @@ add_message_files(
   FourWheelSteerRad8.msg
   FourWheelSteerRad16.msg
   FourWheelSteerPIDGain.msg
+  myOdom.msg
 )
 
 ## Generate services in the 'srv' folder
