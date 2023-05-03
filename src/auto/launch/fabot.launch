@@ -6,6 +6,10 @@
     <arg name="load_ring"       default="true"/>
     <arg name="arduino"         default="true"/>
     <arg name="front_laser"     default="true"/>
+    <arg name="back_laser"      default="true"/>
+    <arg name="map_server"      default="true"/>
+
+    <arg name="map_file"        default="$(find auto)/map/side_area_map.yaml"/>
 
     <group if="$(arg joy_node)">
         <node name="joy_node" pkg="joy" type="joy_node" required="true">
@@ -66,5 +70,23 @@
 
     <group if="$(arg front_laser)">
         <include file="$(find ydlidar_ros_driver)/launch/fabot_X2.launch"/>
+    </group>
+
+    <group if="$(arg back_laser)">
+        <node pkg="urg_node" name="urg_node" type="urg_node" required="true">
+            <param name="frame_id"      value="back_laser"/>
+            <param name="ip_address"    value="192.168.0.10"/>
+            <param name="angle_max"     value="1.0471975512"/>
+            <param name="angle_min"     value="-1.0471975512"/>
+            <remap from="scan"          to="back_scan"/>
+        </node>
+        <node pkg="tf" type="static_transform_publisher" name="base_link_to_back_laser"
+            args="-0.2 0.0 0.0 0.0 0.0 0.0 /base_link /back_laser 500" />
+    </group>
+
+    <group if="$(arg map_server)">
+        <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+            <param name="frame_id" value="odom"/>
+        </node>
     </group>
 </launch>
