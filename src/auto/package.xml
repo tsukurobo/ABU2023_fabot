@@ -67,6 +67,7 @@
   <exec_depend>tf2</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>msgs</exec_depend>
+  <build_depend>fabot_msgs</build_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

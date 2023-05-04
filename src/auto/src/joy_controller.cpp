@@ -3,6 +3,8 @@
 #include <msgs/FourWheelSteerRad.h>
 #include <msgs/FourWheelSteerPIDGain.h>
 #include <sensor_msgs/Joy.h>
+#include <sensor_msgs/LaserScan.h>
+#include <fabot_msgs/ArmMsg.h>
 #include "FourWheelSteer.h"
 
 #include <geometry_msgs/TransformStamped.h>
@@ -21,6 +23,14 @@
 #define YVEHICLE_AXE 4//6
 #define ROTATE_BUTTON_0 10//6
 #define ROTATE_BUTTON_1 11//7
+
+#define CLOSE_HAND_BUTTON 2 //Xボタン
+#define OPEN_HAND_BUTTON 1 //Bボタン
+#define UP_ARM_BUTTON 3 //Yボタン
+#define DOWN_ARM_BUTTON 0 //Aボタン
+int hand_duty = 470; //Arduinoに指定するDuty
+int arm_duty = 470;
+fabot_msgs::ArmMsg arm_state_msg;
 
 using namespace std;
 
@@ -47,6 +57,22 @@ double look_ahead_dist = 2.0;
 PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
 double auto_vx = 0.3;
 
+void autoPickup() {
+
+}
+
+void Auto() {
+    target.stop = false;
+    double a = purepursuit.compute_angerr(x, y, theta);
+    if (purepursuit.get_finish_flag()) {
+        steer.stop();
+        target.stop = true;
+        ROS_INFO_STREAM("AUTO FINISH");
+    }
+    double w = 2*auto_vx*sin(a)/look_ahead_dist;
+    steer.xVehicle(auto_vx, w);
+}
+
 void joyCb(const sensor_msgs::Joy &joy_msg) {
     if (joy_msg.buttons[ENABLE_BUTTON]) {
         target.stop = false;
@@ -68,21 +94,34 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         else if (mode == "ROTATE") {
             steer.rotate(wx);
         }
+
+        //両方押してるときは手は停止
+        if(joy_msg.buttons[OPEN_HAND_BUTTON]==1 && joy_msg.buttons[CLOSE_HAND_BUTTON]==0){
+            arm_state_msg.hand = 1;
+        }else if(joy_msg.buttons[CLOSE_HAND_BUTTON]==1 && joy_msg.buttons[OPEN_HAND_BUTTON]==0){
+            arm_state_msg.hand = 2;
+        }else{
+            arm_state_msg.hand = 0;
+        }
+        //両方押してるときは腕は停止
+        if(joy_msg.buttons[UP_ARM_BUTTON]==1 && joy_msg.buttons[DOWN_ARM_BUTTON]==0){
+            arm_state_msg.arm = 1;
+        }else if(joy_msg.buttons[DOWN_ARM_BUTTON]==1 && joy_msg.buttons[UP_ARM_BUTTON]==0){
+            arm_state_msg.arm = 2;
+        }else{
+            arm_state_msg.arm = 0;
+        }
     }
     else if (joy_msg.buttons[AUTO_BUTTON]) {
-        target.stop = false;
-        double a = purepursuit.compute_angerr(x, y, theta);
-        if (purepursuit.get_finish_flag()) {
-            steer.stop();
-            target.stop = true;
-            ROS_INFO_STREAM("AUTO FINISH");
-        }
-        double w = 2*auto_vx*sin(a)/look_ahead_dist;
-        steer.xVehicle(auto_vx, w);
+
     }
     else {
         steer.stop();
         target.stop = true;
+
+        arm_state_msg.hand = 0;
+        arm_state_msg.arm = 0;
+
         ROS_INFO_STREAM("STOP");
     }
 
@@ -173,6 +212,8 @@ int main(int argc, char **argv) {
     pnh.getParam("Pki3", Pki[3]);
     pnh.getParam("Pkd3", Pkd[3]);
     pnh.getParam("freq", freq);
+    pnh.getParam("hand_duty", hand_duty);
+    pnh.getParam("arm_duty", arm_duty);
 
     steer.setVMax(v_max);
     steer.setWMax(w_max);
@@ -185,6 +226,10 @@ int main(int argc, char **argv) {
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("marker", 1);
+
+    ros::Publisher arm_pub = nh.advertise<fabot_msgs::ArmMsg>("hand_state", 1);
+    arm_state_msg.hand_duty = hand_duty;
+    arm_state_msg.arm_duty = arm_duty;
 
     sleep(5);
     setGain();
@@ -201,6 +246,8 @@ int main(int argc, char **argv) {
 
         visualization_msgs::MarkerArray marker_array = purepursuit.get_marker("odom");
         marker_pub.publish(marker_array);
+
+        arm_pub.publish(arm_state_msg);
 
         loop_rate.sleep();
     }

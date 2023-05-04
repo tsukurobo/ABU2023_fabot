@@ -3,7 +3,6 @@
     <arg name="joy_node"        default="true"/>
     <arg name="joy_controller"  default="true"/>
     <arg name="odometry"        default="true"/>
-    <arg name="load_ring"       default="true"/>
     <arg name="arduino"         default="true"/>
     <arg name="front_laser"     default="true"/>
     <arg name="back_laser"      default="false"/>
@@ -48,6 +47,8 @@
             <param name="Pki3" value="0.8"/>
             <param name="Pkd3" value="0.0"/>
             <param name="freq" value="100"/>
+            <param name="hand_duty" value="600"/>
+            <param name="arm_duty"  value="300"/>
         </node>
     </group>
 
@@ -55,10 +56,6 @@
         <node name="odometry"   pkg="auto"  type="odometry" output="screen" required="true">
             <param name="freq" value="100"/>
         </node>
-    </group>
-
-    <group if="$(arg load_ring)">
-        <node name="load_ring" pkg="load_ring_package" type="load_ring" output="screen" required="true"/>
     </group>
 
     <group if="$(arg arduino)">

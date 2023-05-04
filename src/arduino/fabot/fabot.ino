@@ -29,7 +29,7 @@ int hand_state = 0;
 int arm_state = 0;
 int hand_duty = 0;
 int arm_duty = 0;
-const int arm_bias_duty = 200;
+const int arm_bias_duty = 100;
 
 
 /*ステア制御のグローバル変数*/
