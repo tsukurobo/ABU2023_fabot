@@ -69,14 +69,17 @@ double auto_vx = 0.3;
 
 // スキャンデータ
 sensor_msgs::LaserScan front_scan;
+
+// リング自動回収のパラメータ
 double pickup_dist = 0.14, pickup_vel = 0.1;
 double close_hand_time = 2.0, up_arm_time = 1.0;
 
-bool autoPickup() {
+string autoPickup() {
     static string mode = "XVEHICLE";
     static ros::Time close_start_time, up_start_time;
     static ros::Time last_time = ros::Time::now();
 
+    // しばらく呼び出されないときはXVEHICLEモードに戻す
     ros::Time now_time = ros::Time::now();
     if (now_time.toSec() - last_time.toSec() > 0.5) {
         mode = "XVEHICLE";
@@ -86,7 +89,7 @@ bool autoPickup() {
     if (mode == "XVEHICLE") {
         // アームを下げる
         arm_state_msg.arm = DOWN_ARM;
-        
+
         // 値の強度（信頼性）の平均を求める
         double intensities_mean = 0.0;
         for (int i = 0; i < front_scan.intensities.size(); i++) {
@@ -119,8 +122,6 @@ bool autoPickup() {
             close_start_time = ros::Time::now();
             ROS_INFO_STREAM("CLOSE_HAND");
         }
-
-        return false;
     }
     else if (mode == "CLOSE_HAND") {
         arm_state_msg.hand = CLOSE_HAND;
@@ -130,8 +131,6 @@ bool autoPickup() {
             up_start_time = ros::Time::now();
             ROS_INFO_STREAM("UP_ARM");
         }
-
-        return false;
     }
     else if (mode == "UP_ARM") {
         arm_state_msg.arm = UP_ARM;
@@ -140,12 +139,9 @@ bool autoPickup() {
             arm_state_msg.arm = STOP_ARM;
             ROS_INFO_STREAM("FINISH");
         }
-
-        return true;
     }
-    else {
-        return true;
-    }
+    
+    return mode;
 }
 
 void Auto() {
