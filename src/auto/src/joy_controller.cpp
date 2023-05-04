@@ -28,6 +28,12 @@
 #define OPEN_HAND_BUTTON 1 //Bボタン
 #define UP_ARM_BUTTON 3 //Yボタン
 #define DOWN_ARM_BUTTON 0 //Aボタン
+#define CLOSE_HAND 2
+#define OPEN_HAND 1
+#define STOP_HAND 0
+#define UP_ARM 1
+#define DOWN_ARM 2
+#define STOP_ARM 0
 int hand_duty = 470; //Arduinoに指定するDuty
 int arm_duty = 470;
 fabot_msgs::ArmMsg arm_state_msg;
@@ -41,24 +47,105 @@ string mode = "XVEHICLE";
 
 int freq = 1000;
 
+// ステアのパラメータ
 FourWheelSteer steer(34.286, 310.0, 350.0);
-double vx = 0.0, vy = 0.0, wx = 0.0, wy = 0.0, TurnRadius = 1e6;
 double v_max = 1.0, w_max = M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
 
+// PIDのパラメータ
 double Vkp[4], Vki[4], Vkd[4];
 double Pkp[4], Pki[4], Pkd[4];
 
+// ステアの角速度と座標
 double angVel[4], angle[4];
 double x, y, theta;
 
+// 自律走行のパラメータ
+bool auto_flag = false;
 point pass[] = {{-0.01, 0.0}, {4.0, 0.0}, {4.0, 3.0}, {8.0, 3.0}, {8.0, 0.0}};
 uint pass_num = 5;
 double look_ahead_dist = 2.0;
 PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
 double auto_vx = 0.3;
 
-void autoPickup() {
+// スキャンデータ
+sensor_msgs::LaserScan front_scan;
+double pickup_dist = 0.14, pickup_vel = 0.1;
+double close_hand_time = 2.0, up_arm_time = 1.0;
 
+bool autoPickup() {
+    static string mode = "XVEHICLE";
+    static ros::Time close_start_time, up_start_time;
+    static ros::Time last_time = ros::Time::now();
+
+    ros::Time now_time = ros::Time::now();
+    if (now_time.toSec() - last_time.toSec() > 0.5) {
+        mode = "XVEHICLE";
+    }
+    last_time = now_time;
+
+    if (mode == "XVEHICLE") {
+        // アームを下げる
+        arm_state_msg.arm = DOWN_ARM;
+        
+        // 値の強度（信頼性）の平均を求める
+        double intensities_mean = 0.0;
+        for (int i = 0; i < front_scan.intensities.size(); i++) {
+            intensities_mean += front_scan.intensities[i];
+        }
+        intensities_mean /= (double)front_scan.intensities.size();
+
+        // 最小値を求める
+        double min_dist = 1e6;
+        int min_idx = 0;
+        for (int i = 0; i < front_scan.ranges.size(); i++) {
+            if (front_scan.ranges[i] < min_dist && front_scan.intensities[i] > intensities_mean) {
+                min_dist = front_scan.ranges[i];
+                min_idx = i;
+            }
+        }
+
+        // リングとの方位誤差を計算し、その方向に速度を与える
+        double angle = front_scan.angle_min + front_scan.angle_increment * min_idx;
+        double w = 2*pickup_vel*sin(angle)/pickup_dist;
+
+        target.stop = false;
+        steer.xVehicle(pickup_vel, w);
+
+        // リングが近づいたら止まってハンドを閉じる
+        if (min_dist < pickup_dist) {
+            mode = "CLOSE_HAND";
+            target.stop = true;
+            steer.stop();
+            close_start_time = ros::Time::now();
+            ROS_INFO_STREAM("CLOSE_HAND");
+        }
+
+        return false;
+    }
+    else if (mode == "CLOSE_HAND") {
+        arm_state_msg.hand = CLOSE_HAND;
+        if (ros::Time::now().toSec() - close_start_time.toSec() > close_hand_time) {
+            mode = "UP_ARM";
+            arm_state_msg.hand = STOP_HAND;
+            up_start_time = ros::Time::now();
+            ROS_INFO_STREAM("UP_ARM");
+        }
+
+        return false;
+    }
+    else if (mode == "UP_ARM") {
+        arm_state_msg.arm = UP_ARM;
+        if (ros::Time::now().toSec() - up_start_time.toSec() > up_arm_time) {
+            mode = "FINISH";
+            arm_state_msg.arm = STOP_ARM;
+            ROS_INFO_STREAM("FINISH");
+        }
+
+        return true;
+    }
+    else {
+        return true;
+    }
 }
 
 void Auto() {
@@ -74,13 +161,15 @@ void Auto() {
 }
 
 void joyCb(const sensor_msgs::Joy &joy_msg) {
+    double vx = 0.0, vy = 0.0, wx = 0.0, wy = 0.0;
     if (joy_msg.buttons[ENABLE_BUTTON]) {
+        auto_flag = false;
         target.stop = false;
         vy =  joy_msg.axes[VY_AXE] * joy_msg.axes[VY_AXE] * copysign(v_max, joy_msg.axes[VY_AXE]);
         vx =  joy_msg.axes[VX_AXE] * joy_msg.axes[VX_AXE] * copysign(v_max, joy_msg.axes[VX_AXE]);
         wx  = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(w_max, joy_msg.axes[WX_AXE]);
         wy  = -joy_msg.axes[WY_AXE] * joy_msg.axes[WY_AXE] * copysign(w_max, joy_msg.axes[WY_AXE]);
-        ROS_INFO_STREAM(mode);
+        ROS_INFO_STREAM("MANUAL " + mode);
 
         if (mode == "XVEHICLE") {
             steer.xVehicle(vx, wx);
@@ -97,27 +186,29 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
 
         //両方押してるときは手は停止
         if(joy_msg.buttons[OPEN_HAND_BUTTON]==1 && joy_msg.buttons[CLOSE_HAND_BUTTON]==0){
-            arm_state_msg.hand = 1;
+            arm_state_msg.hand = OPEN_HAND;
         }else if(joy_msg.buttons[CLOSE_HAND_BUTTON]==1 && joy_msg.buttons[OPEN_HAND_BUTTON]==0){
-            arm_state_msg.hand = 2;
+            arm_state_msg.hand = CLOSE_HAND;
         }else{
-            arm_state_msg.hand = 0;
+            arm_state_msg.hand = STOP_HAND;
         }
         //両方押してるときは腕は停止
         if(joy_msg.buttons[UP_ARM_BUTTON]==1 && joy_msg.buttons[DOWN_ARM_BUTTON]==0){
-            arm_state_msg.arm = 1;
+            arm_state_msg.arm = UP_ARM;
         }else if(joy_msg.buttons[DOWN_ARM_BUTTON]==1 && joy_msg.buttons[UP_ARM_BUTTON]==0){
-            arm_state_msg.arm = 2;
+            arm_state_msg.arm = DOWN_ARM;
         }else{
-            arm_state_msg.arm = 0;
+            arm_state_msg.arm = STOP_ARM;
         }
     }
     else if (joy_msg.buttons[AUTO_BUTTON]) {
-
+        auto_flag = true;
+        ROS_INFO_STREAM("AUTO");
     }
     else {
         steer.stop();
         target.stop = true;
+        auto_flag = false;
 
         arm_state_msg.hand = 0;
         arm_state_msg.arm = 0;
@@ -137,6 +228,10 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         mode = "ROTATE";
         ROS_INFO_STREAM("MODE CHANGE: ROTATE");
     }
+}
+
+void frontScanCb(const sensor_msgs::LaserScan &scan_msg) {
+    front_scan = scan_msg;
 }
 
 void getCoodinate() {
@@ -214,6 +309,10 @@ int main(int argc, char **argv) {
     pnh.getParam("freq", freq);
     pnh.getParam("hand_duty", hand_duty);
     pnh.getParam("arm_duty", arm_duty);
+    pnh.getParam("pickup_dist", pickup_dist);
+    pnh.getParam("pickup_vel", pickup_vel);
+    pnh.getParam("close_hand_time", close_hand_time);
+    pnh.getParam("up_arm_time", up_arm_time);
 
     steer.setVMax(v_max);
     steer.setWMax(w_max);
@@ -223,6 +322,7 @@ int main(int argc, char **argv) {
     target.stop = true;
 
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
+    ros::Subscriber front_scan_sub = nh.subscribe("front_scan", 1, frontScanCb);
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("marker", 1);
@@ -238,6 +338,10 @@ int main(int argc, char **argv) {
     ros::Rate loop_rate(freq);
     while (ros::ok()) {
         ros::spinOnce();
+
+        if (auto_flag) {
+            autoPickup();
+        }
 
         setTarget();
         target_pub.publish(target);

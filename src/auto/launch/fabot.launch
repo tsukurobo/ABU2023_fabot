@@ -47,8 +47,12 @@
             <param name="Pki3" value="0.8"/>
             <param name="Pkd3" value="0.0"/>
             <param name="freq" value="100"/>
-            <param name="hand_duty" value="600"/>
-            <param name="arm_duty"  value="300"/>
+            <param name="hand_duty" value="800"/>
+            <param name="arm_duty"  value="400"/>
+            <param name="pickup_dist"   value="0.13"/>
+            <param name="pickup_vel"    value="0.05"/>
+            <param name="close_hand_time"   value="2.0"/>
+            <param name="up_arm_time"       value="2.0"/>
         </node>
     </group>
 
