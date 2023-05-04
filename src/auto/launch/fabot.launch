@@ -6,7 +6,7 @@
     <arg name="load_ring"       default="true"/>
     <arg name="arduino"         default="true"/>
     <arg name="front_laser"     default="true"/>
-    <arg name="back_laser"      default="true"/>
+    <arg name="back_laser"      default="false"/>
     <arg name="map_server"      default="true"/>
 
     <arg name="map_file"        default="$(find auto)/map/side_area_map.yaml"/>
