@@ -61,11 +61,18 @@ double x, y, theta;
 
 // 自律走行のパラメータ
 bool auto_flag = false;
-point pass[] = {{-0.01, 0.0}, {4.0, 0.0}, {4.0, 3.0}, {8.0, 3.0}, {8.0, 0.0}};
-uint pass_num = 5;
-double look_ahead_dist = 2.0;
-PurePursuit purepursuit(pass, pass_num, look_ahead_dist);
 double auto_vx = 0.3;
+visualization_msgs::MarkerArray marker_array;
+
+point pass0[] = {{-0.1, 0.0}, {4.0, 0.0}};
+uint pass_num0 = 2;
+double look_ahead_dist0 = 2.0;
+PurePursuit pp0(pass0, pass_num0, look_ahead_dist0);
+
+point pass1[] = {{5.0, 0.0}, {0.0, 0.0}};
+uint pass_num1 = 2;
+double look_ahead_dist1 = 2.0;
+PurePursuit pp1(pass1, pass_num1, look_ahead_dist1);
 
 // スキャンデータ
 sensor_msgs::LaserScan front_scan;
@@ -144,16 +151,48 @@ string autoPickup() {
     return mode;
 }
 
-void Auto() {
+string auto0() {
     target.stop = false;
-    double a = purepursuit.compute_angerr(x, y, theta);
-    if (purepursuit.get_finish_flag()) {
+    double turn_radius = pp0.compute_turn_radius(x, y, theta);
+    if (pp0.get_finish_flag()) {
         steer.stop();
         target.stop = true;
         ROS_INFO_STREAM("AUTO FINISH");
+        return "FINISH";
     }
-    double w = 2*auto_vx*sin(a)/look_ahead_dist;
+    double w = auto_vx / turn_radius;
     steer.xVehicle(auto_vx, w);
+    marker_array = pp0.get_marker("odom");
+    return "RUNNING";
+}
+
+string auto1() {
+    target.stop = false;
+    double turn_radius = pp1.compute_turn_radius(x, y, theta + M_PI);
+    if (pp1.get_finish_flag()) {
+        steer.stop();
+        target.stop = true;
+        ROS_INFO_STREAM("AUTO FINISH");
+        return "FINISH";
+    }
+    double w = -auto_vx / turn_radius;
+    steer.xVehicle(-auto_vx, w);
+    marker_array = pp1.get_marker("odom");
+    return "RUNNING";
+}
+
+void Auto() {
+    static string mode = "auto0";
+    if (mode == "auto0") {
+        if(auto0() == "FINISH") {
+            mode = "auto1";
+        }
+    }
+    else if (mode == "auto1") {
+        if(auto1() == "FINISH") {
+            mode = "auto0";
+        }
+    }
 }
 
 void joyCb(const sensor_msgs::Joy &joy_msg) {
@@ -336,7 +375,7 @@ int main(int argc, char **argv) {
         ros::spinOnce();
 
         if (auto_flag) {
-            autoPickup();
+            Auto();
         }
 
         setTarget();
@@ -344,7 +383,6 @@ int main(int argc, char **argv) {
 
         getCoodinate();
 
-        visualization_msgs::MarkerArray marker_array = purepursuit.get_marker("odom");
         marker_pub.publish(marker_array);
 
         arm_pub.publish(arm_state_msg);

@@ -46,7 +46,7 @@
             <param name="Pkp3" value="0.35"/>
             <param name="Pki3" value="0.8"/>
             <param name="Pkd3" value="0.0"/>
-            <param name="freq" value="100"/>
+            <param name="freq" value="50"/>
             <param name="hand_duty" value="800"/>
             <param name="arm_duty"  value="400"/>
             <param name="pickup_dist"   value="0.13"/>
@@ -58,14 +58,14 @@
 
     <group if="$(arg odometry)">
         <node name="odometry"   pkg="auto"  type="odometry" output="screen" required="true">
-            <param name="freq" value="100"/>
+            <param name="freq" value="50"/>
         </node>
     </group>
 
     <group if="$(arg arduino)">
         <node name="arduino" pkg="rosserial_python" type="serial_node.py" output="screen" required="true">
             <param name="port" value="/dev/ttyACM0"/>
-            <param name="baud" value="8000000"/>
+            <param name="baud" value="10000000"/>
         </node>
     </group>
 

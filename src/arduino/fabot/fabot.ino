@@ -11,7 +11,7 @@
 #include "fabot_msgs/ArmMsg.h"
 
 ros::NodeHandle nh;
-#define BAUDRATE 8000000
+#define BAUDRATE 10000000
 
 /*アーム制御のグローバル変数*/
 #define HAND_MOTOR 11  // 手のモーター番号

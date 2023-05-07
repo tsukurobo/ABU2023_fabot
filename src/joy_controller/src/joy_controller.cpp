@@ -68,10 +68,10 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         }
     }
     else if (joy_msg.buttons[AUTO_BUTTON]) {
-        target.stop = false;
-        double a = purepursuit.compute_angerr(x, y, theta);
-        double w = 2*auto_vx*sin(a)/look_ahead_dist;
-        steer.xVehicle(auto_vx, w);
+        // target.stop = false;
+        // double a = purepursuit.compute_angerr(x, y, theta);
+        // double w = 2*auto_vx*sin(a)/look_ahead_dist;
+        // steer.xVehicle(auto_vx, w);
     }
     else {
         steer.stop();

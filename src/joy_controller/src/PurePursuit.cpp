@@ -41,14 +41,17 @@ bool PurePursuit::is_inside(point intersection, uint target_index) {
     return angle > M_PI_2;
 }
 
-double PurePursuit::compute_angerr(double x, double y, double theta) {
-    // 最後の線分の端点に到達したら、最終点との方位誤差を返す
+double PurePursuit::compute_turn_radius(double x, double y, double theta) {
+    // 最後の線分の端点に到達したら、最終点との方位誤差を計算し、旋回半径を返す
     if (calc_dist({x, y}, target_coordinates[target_num - 1]) < finish_dist) {
         finish_flag = true;
         double angerr = atan2(target_coordinates[target_num - 1].y - y, target_coordinates[target_num - 1].x - x) - theta;
-        return angerr;
+        double turn_radius = calc_dist({x, y}, target_coordinates[target_num - 1]) / (2 * sin(angerr));
+        return turn_radius;
     }
 
+    finish_flag = false;
+    
     // 現在位置と最も距離の短い線分とその交点を求める
     int min_num = -1; double min_dist = MAXFLOAT; point min_intersection;
     for (int i = 0; i < target_num - 1; i++) {
@@ -98,7 +101,10 @@ double PurePursuit::compute_angerr(double x, double y, double theta) {
     // 現在位置とlook_ahead_pointから方位誤差を求める。
     double angerr = atan2(look_ahead_point.y - y, look_ahead_point.x - x) - theta;
 
-    return angerr;
+    // 旋回半径を求める(正の値: 左旋回, 負の値: 右旋回)
+    double turn_radius = calc_dist({x, y}, look_ahead_point) / (2 * sin(angerr));
+
+    return turn_radius;
 }
 
 visualization_msgs::MarkerArray PurePursuit::get_marker(string frame_id) {
