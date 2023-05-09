@@ -35,8 +35,8 @@ private:
     bool is_inside(point intersection, uint target_index);
     double perpendicular_dist(point current, uint target_index, point &intersection);
 public:
-    PurePursuit(point target_coordinates[], uint target_num, double look_ahead_dist, double finish_dist = 0.1);
-    double compute_angerr(double x, double y, double theta);
+    PurePursuit(point target_coordinates[], uint target_num, double look_ahead_dist, double finish_dist = 0.3);
+    double compute_turn_radius(double x, double y, double theta);
     void set_look_ahead_dist(double look_ahead_dist) {this->look_ahead_dist = abs(look_ahead_dist);}
     bool get_finish_flag() {return finish_flag;}
     visualization_msgs::MarkerArray get_marker(string frame_id);

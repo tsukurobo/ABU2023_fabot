@@ -1,10 +1,14 @@
 <launch>
-    <arg name="joy_dev"         default="/dev/input/js2"/>
+    <arg name="joy_dev"         default="/dev/input/js0"/>
     <arg name="joy_node"        default="true"/>
     <arg name="joy_controller"  default="true"/>
     <arg name="odometry"        default="true"/>
-    <arg name="load_ring"       default="true"/>
     <arg name="arduino"         default="true"/>
+    <arg name="front_laser"     default="true"/>
+    <arg name="back_laser"      default="false"/>
+    <arg name="map_server"      default="true"/>
+
+    <arg name="map_file"        default="$(find auto)/map/side_area_map.yaml"/>
 
     <group if="$(arg joy_node)">
         <node name="joy_node" pkg="joy" type="joy_node" required="true">
@@ -21,45 +25,69 @@
             <param name="Vkp0" value="0.1"/>
             <param name="Vki0" value="0.0"/>
             <param name="Vkd0" value="0.0"/>
-            <param name="Pkp0" value="0.30"/>
+            <param name="Pkp0" value="0.20"/>
             <param name="Pki0" value="0.8"/>
             <param name="Pkd0" value="0.0"/>
             <param name="Vkp1" value="0.1"/>
             <param name="Vki1" value="0.0"/>
             <param name="Vkd1" value="0.0"/>
-            <param name="Pkp1" value="0.35"/>
+            <param name="Pkp1" value="0.25"/>
             <param name="Pki1" value="0.8"/>
             <param name="Pkd1" value="0.0"/>
             <param name="Vkp2" value="0.1"/>
             <param name="Vki2" value="0.0"/>
             <param name="Vkd2" value="0.0"/>
-            <param name="Pkp2" value="0.35"/>
+            <param name="Pkp2" value="0.25"/>
             <param name="Pki2" value="0.8"/>
             <param name="Pkd2" value="0.0"/>
             <param name="Vkp3" value="0.1"/>
             <param name="Vki3" value="0.0"/>
             <param name="Vkd3" value="0.0"/>
-            <param name="Pkp3" value="0.35"/>
+            <param name="Pkp3" value="0.25"/>
             <param name="Pki3" value="0.8"/>
             <param name="Pkd3" value="0.0"/>
-            <param name="freq" value="100"/>
+            <param name="freq" value="50"/>
+            <param name="hand_duty" value="800"/>
+            <param name="arm_duty"  value="400"/>
+            <param name="pickup_dist"   value="0.13"/>
+            <param name="pickup_vel"    value="0.05"/>
+            <param name="close_hand_time"   value="2.0"/>
+            <param name="up_arm_time"       value="2.0"/>
         </node>
     </group>
 
     <group if="$(arg odometry)">
         <node name="odometry"   pkg="auto"  type="odometry" output="screen" required="true">
-            <param name="freq" value="100"/>
+            <param name="freq" value="50"/>
         </node>
-    </group>
-
-    <group if="$(arg load_ring)">
-        <node name="load_ring" pkg="load_ring_package" type="load_ring" output="screen" required="true"/>
     </group>
 
     <group if="$(arg arduino)">
         <node name="arduino" pkg="rosserial_python" type="serial_node.py" output="screen" required="true">
             <param name="port" value="/dev/ttyACM0"/>
-            <param name="baud" value="4000000"/>
+            <param name="baud" value="10000000"/>
+        </node>
+    </group>
+
+    <group if="$(arg front_laser)">
+        <include file="$(find ydlidar_ros_driver)/launch/fabot_X2.launch"/>
+    </group>
+
+    <group if="$(arg back_laser)">
+        <node pkg="urg_node" name="urg_node" type="urg_node" required="true">
+            <param name="frame_id"      value="back_laser"/>
+            <param name="ip_address"    value="192.168.0.10"/>
+            <param name="angle_max"     value="1.0471975512"/>
+            <param name="angle_min"     value="-1.0471975512"/>
+            <remap from="scan"          to="back_scan"/>
+        </node>
+        <node pkg="tf" type="static_transform_publisher" name="base_link_to_back_laser"
+            args="-0.2 0.0 0.0 0.0 0.0 0.0 /base_link /back_laser 500" />
+    </group>
+
+    <group if="$(arg map_server)">
+        <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+            <param name="frame_id" value="odom"/>
         </node>
     </group>
 </launch>
