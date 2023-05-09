@@ -17,12 +17,12 @@
 #define AUTO_BUTTON 4
 #define VY_AXE 0
 #define VX_AXE 1
-#define WX_AXE 2//3
-#define WY_AXE 3//4
-#define XVEHICLE_AXE 5//7
-#define YVEHICLE_AXE 4//6
-#define ROTATE_BUTTON_0 10//6
-#define ROTATE_BUTTON_1 11//7
+#define WX_AXE 3 //2
+#define WY_AXE 4 //3
+#define XVEHICLE_AXE 7 //5
+#define YVEHICLE_AXE 6 //4
+#define ROTATE_BUTTON_0 6 //10
+#define ROTATE_BUTTON_1 7 //11
 
 #define CLOSE_HAND_BUTTON 2 //Xボタン
 #define OPEN_HAND_BUTTON 1 //Bボタン
@@ -67,12 +67,12 @@ visualization_msgs::MarkerArray marker_array;
 point pass0[] = {{-0.1, 0.0}, {4.0, 0.0}};
 uint pass_num0 = 2;
 double look_ahead_dist0 = 2.0;
-PurePursuit pp0(pass0, pass_num0, look_ahead_dist0);
+PurePursuit pp0(pass0, pass_num0, look_ahead_dist0, 1.0);
 
 point pass1[] = {{5.0, 0.0}, {0.0, 0.0}};
 uint pass_num1 = 2;
 double look_ahead_dist1 = 2.0;
-PurePursuit pp1(pass1, pass_num1, look_ahead_dist1);
+PurePursuit pp1(pass1, pass_num1, look_ahead_dist1, 1.0);
 
 // スキャンデータ
 sensor_msgs::LaserScan front_scan;
@@ -185,6 +185,11 @@ void Auto() {
     static string mode = "auto0";
     if (mode == "auto0") {
         if(auto0() == "FINISH") {
+            mode = "pickup";
+        }
+    }
+    else if (mode == "pickup") {
+        if(autoPickup() == "UP_ARM") {
             mode = "auto1";
         }
     }
@@ -348,6 +353,7 @@ int main(int argc, char **argv) {
     pnh.getParam("pickup_vel", pickup_vel);
     pnh.getParam("close_hand_time", close_hand_time);
     pnh.getParam("up_arm_time", up_arm_time);
+    pnh.getParam("auto_vx", auto_vx);
 
     steer.setVMax(v_max);
     steer.setWMax(w_max);
