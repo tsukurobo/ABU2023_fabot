@@ -75,11 +75,18 @@ double look_ahead_dist1 = 2.0;
 PurePursuit pp1(pass1, pass_num1, look_ahead_dist1, 1.0);
 
 // スキャンデータ
-sensor_msgs::LaserScan front_scan;
+sensor_msgs::LaserScan front_scan, back_scan;
 
 // リング自動回収のパラメータ
 double pickup_dist = 0.14, pickup_vel = 0.1;
-double close_hand_time = 2.0, up_arm_time = 1.0;
+double close_hand_time = 2.0, pickup_arm_time = 1.0;
+
+// 自動装填のパラメータ
+int flat_range = 5, needle_range = 4;
+double flat_threshold = 0.10, needle_threshold = 1;
+double flat_angle_max = 0.05, load_dist = 0.10;
+double load_w = 0.03, load_vel = 0.03;
+double load_arm_time = 1.0, open_hand_time = 1.0;
 
 string autoPickup() {
     static string mode = "XVEHICLE";
@@ -141,13 +148,164 @@ string autoPickup() {
     }
     else if (mode == "UP_ARM") {
         arm_state_msg.arm = UP_ARM;
-        if (ros::Time::now().toSec() - up_start_time.toSec() > up_arm_time) {
+        if (ros::Time::now().toSec() - up_start_time.toSec() > pickup_arm_time) {
             mode = "FINISH";
             arm_state_msg.arm = STOP_ARM;
             ROS_INFO_STREAM("FINISH");
         }
     }
     
+    return mode;
+}
+
+point polar_to_cartesian(double r, double theta) {
+    point p;
+    p.x = r * cos(theta);
+    p.y = r * sin(theta);
+    return p;
+}
+
+bool is_flat(uint start_num, uint end_num, double threshold, uint range = 5) {
+    double r0 = back_scan.ranges[start_num];
+    double r1 = back_scan.ranges[end_num];
+    double theta0 = back_scan.angle_min + back_scan.angle_increment * start_num + M_PI_2; // LiDARの正面をy軸の正方向とする
+    double theta1 = back_scan.angle_min + back_scan.angle_increment * end_num + M_PI_2;
+    point p0 = polar_to_cartesian(r0, theta0);
+    point p1 = polar_to_cartesian(r1, theta1);
+    double _slope = (p1.y - p0.y) / (p1.x - p0.x);
+    for (int i = 1; i < min((end_num - start_num) / 2, range); i++) {
+        r0 = back_scan.ranges[start_num + i];
+        r1 = back_scan.ranges[end_num - i];
+        theta0 = back_scan.angle_min + back_scan.angle_increment * (start_num + i) + M_PI_2;
+        theta1 = back_scan.angle_min + back_scan.angle_increment * (end_num - i) + M_PI_2;
+        p0 = polar_to_cartesian(r0, theta0);
+        p1 = polar_to_cartesian(r1, theta1);
+        double slope = (p1.y - p0.y) / (p1.x - p0.x);
+        if (fabs(slope - _slope) > threshold) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool is_needle(uint num, double threshold, uint range = 3) {
+    double r0 = back_scan.ranges[num];
+    double r1 = back_scan.ranges[num + range];
+    double r2 = back_scan.ranges[num - range];
+    double theta0 = back_scan.angle_min + back_scan.angle_increment * num + M_PI_2;
+    double theta1 = back_scan.angle_min + back_scan.angle_increment * (num + range) + M_PI_2;
+    double theta2 = back_scan.angle_min + back_scan.angle_increment * (num - range) + M_PI_2;
+    point p0 = polar_to_cartesian(r0, theta0);
+    point p1 = polar_to_cartesian(r1, theta1);
+    point p2 = polar_to_cartesian(r2, theta2);
+    double slope0 = (p1.y - p0.y) / (p1.x - p0.x);
+    double slope1 = (p2.y - p1.y) / (p2.x - p1.x);
+    if (fabs(slope0 - slope1) > threshold) {
+        return true;
+    }
+    return false;
+}
+
+string autoLoad() {
+    static string mode = "ROTATE";
+    static ros::Time up_start_time, open_start_time;
+    static ros::Time last_time = ros::Time::now();
+
+    // しばらく呼び出されないときはROTATEモードに戻す
+    ros::Time now_time = ros::Time::now();
+    if (now_time.toSec() - last_time.toSec() > 0.5) {
+        mode = "ROTATE";
+    }
+    last_time = now_time;
+
+    const int middle = back_scan.ranges.size() / 2;
+
+    if (mode == "ROTATE") {
+        int flat_idx = -1;
+        vec flat;
+
+        // 平面の角度を計算
+        for (int i = 0; i < middle; i++) {
+            if (is_flat(i, back_scan.ranges.size() - i - 1, flat_threshold, flat_range)) {
+                flat_idx = i;
+                point p0 = polar_to_cartesian(back_scan.ranges[i], back_scan.angle_min + back_scan.angle_increment * i);
+                point p1 = polar_to_cartesian(back_scan.ranges[back_scan.ranges.size() - i - 1], back_scan.angle_min + back_scan.angle_increment * (back_scan.ranges.size() - i - 1));
+                double dist = sqrt(pow(p0.x - p1.x, 2) + pow(p0.y - p1.y, 2));
+                flat.x = (p1.x - p0.x) / dist; flat.y = (p1.y - p0.y) / dist;
+                break;
+            }
+        }
+        if (flat_idx == -1) {
+            target.stop = true;
+            steer.rotate(0);
+            ROS_INFO_STREAM("FLAT NOT FOUND");
+            return "ERROR";
+        }
+
+        target.stop = false;
+        if (flat.x < 0) steer.rotate(load_w); // 符号は要検証
+        else            steer.rotate(-load_w);
+
+        // 平面と機体の角度が合っている場合はPARALLELモードに移行
+        if (abs(atan2(flat.x, flat.y)) < flat_angle_max) {
+            mode = "PARALLEL";
+            ROS_INFO_STREAM("PARALLEL");
+        }
+    }
+    else if (mode == "PARALLEL") {
+        // 目印となる平面上の突起を探す
+        int needle_idx = -1;
+        for (int i = 0; i < middle - needle_range - 1; i++) {
+            if (is_needle(middle + i, needle_threshold, needle_range)) {
+                needle_idx = middle + i;
+                break;
+            }
+            else if (is_needle(middle - i, needle_threshold, needle_range)) {
+                needle_idx = middle - i;
+                break;
+            }
+        }
+        if (needle_idx == -1) {
+            target.stop = true;
+            steer.parallel(0, 0);
+            ROS_INFO_STREAM("NEEDLE NOT FOUND");
+            return "ERROR";
+        }
+
+        point needl = polar_to_cartesian(back_scan.ranges[needle_idx], back_scan.angle_min + back_scan.angle_increment * needle_idx);
+        double dist = sqrt(pow(needl.x, 2) + pow(needl.y, 2));
+
+        vec needl_vec = {needl.x / dist, needl.y / dist}; // 符号は要検証
+        target.stop = false;
+        steer.parallel(load_vel*needl_vec.x, load_vel*needl_vec.y);
+
+        // 平面上の突起との距離が近い場合はUP_ARMモードに移行
+        if (dist < load_dist) {
+            mode = "UP_ARM";
+            target.stop = true;
+            steer.stop();
+            up_start_time = ros::Time::now();
+            ROS_INFO_STREAM("UP_ARM");
+        }
+    }
+    else if (mode == "UP_ARM") {
+        arm_state_msg.arm = UP_ARM;
+        if (ros::Time::now().toSec() - up_start_time.toSec() > load_arm_time) {
+            mode = "OPEN_HAND";
+            arm_state_msg.arm = STOP_ARM;
+            open_start_time = ros::Time::now();
+            ROS_INFO_STREAM("OPEN_HAND");
+        }
+    }
+    else if (mode == "OPEN_HAND") {
+        arm_state_msg.hand = OPEN_HAND;
+        if (ros::Time::now().toSec() - open_start_time.toSec() > open_hand_time) {
+            mode = "FINISH";
+            arm_state_msg.hand = STOP_HAND;
+            ROS_INFO_STREAM("FINISH");
+        }
+    }
+
     return mode;
 }
 
@@ -274,6 +432,10 @@ void frontScanCb(const sensor_msgs::LaserScan &scan_msg) {
     front_scan = scan_msg;
 }
 
+void backScanCb(const sensor_msgs::LaserScan &scan_msg) {
+    back_scan = scan_msg;
+}
+
 void getCoodinate() {
     static tf2_ros::Buffer tfBuffer;
     static tf2_ros::TransformListener tfListener(tfBuffer);
@@ -347,13 +509,26 @@ int main(int argc, char **argv) {
     pnh.getParam("Pki3", Pki[3]);
     pnh.getParam("Pkd3", Pkd[3]);
     pnh.getParam("freq", freq);
+    // リング回収のパラメータ
     pnh.getParam("hand_duty", hand_duty);
     pnh.getParam("arm_duty", arm_duty);
     pnh.getParam("pickup_dist", pickup_dist);
     pnh.getParam("pickup_vel", pickup_vel);
     pnh.getParam("close_hand_time", close_hand_time);
-    pnh.getParam("up_arm_time", up_arm_time);
+    pnh.getParam("pickup_arm_time", pickup_arm_time);
+    // 自律走行の速度
     pnh.getParam("auto_vx", auto_vx);
+    // 装填のパラメータ
+    pnh.getParam("flat_range", flat_range);
+    pnh.getParam("flat_threshold", flat_threshold);
+    pnh.getParam("flat_angle_max", flat_angle_max);
+    if (pnh.getParam("load_w", load_w)) load_w *= M_PI;
+    pnh.getParam("needle_range", needle_range);
+    pnh.getParam("needle_threshold", needle_threshold);
+    pnh.getParam("load_dist", load_dist);
+    pnh.getParam("load_vel", load_vel);
+    pnh.getParam("load_arm_time", load_arm_time);
+    pnh.getParam("open_hand_time", open_hand_time);
 
     steer.setVMax(v_max);
     steer.setWMax(w_max);
@@ -381,7 +556,8 @@ int main(int argc, char **argv) {
         ros::spinOnce();
 
         if (auto_flag) {
-            Auto();
+            //Auto();
+            autoLoad();
         }
 
         setTarget();

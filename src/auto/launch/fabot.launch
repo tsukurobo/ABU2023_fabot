@@ -5,7 +5,7 @@
     <arg name="odometry"        default="true"/>
     <arg name="arduino"         default="true"/>
     <arg name="front_laser"     default="true"/>
-    <arg name="back_laser"      default="false"/>
+    <arg name="back_laser"      default="true"/>
     <arg name="map_server"      default="true"/>
 
     <arg name="map_file"        default="$(find auto)/map/side_area_map.yaml"/>
@@ -49,10 +49,22 @@
             <param name="freq" value="50"/>
             <param name="hand_duty" value="800"/>
             <param name="arm_duty"  value="400"/>
+
             <param name="pickup_dist"   value="0.13"/>
             <param name="pickup_vel"    value="0.05"/>
             <param name="close_hand_time"   value="2.0"/>
-            <param name="up_arm_time"       value="2.0"/>
+            <param name="pickup_arm_time"   value="2.0"/>
+
+            <param name="flat_range"        value="5"/>
+            <param name="flat_threshold"    value="0.10"/>
+            <param name="flat_angle_max"    value="0.05"/>
+            <param name="load_w"            value="0.03"/>
+            <param name="needle_range"      value="4"/>
+            <param name="needle_threshold"  value="1"/>
+            <param name="load_dist"         value="0.10"/>
+            <param name="load_vel"          value="0.03"/>
+            <param name="load_arm_time"     value="1.0"/>
+            <param name="open_hand_time"    value="1.0"/>
         </node>
     </group>
 
