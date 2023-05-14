@@ -48,7 +48,7 @@ string mode = "XVEHICLE";
 int freq = 1000;
 
 // ステアのパラメータ
-FourWheelSteer steer(34.286, 310.0, 350.0);
+FourWheelSteer steer((80.0+0.92)*(21.0/49.0)*M_PI, 310.0, 350.0);
 double v_max = 1.0, w_max = M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
 
 // PIDのパラメータ
