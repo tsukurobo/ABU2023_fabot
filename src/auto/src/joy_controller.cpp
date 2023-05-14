@@ -82,10 +82,15 @@ double pickup_dist = 0.14, pickup_vel = 0.1;
 double close_hand_time = 2.0, pickup_arm_time = 1.0;
 
 // 自動装填のパラメータ
+// 平面を判定する際に見る両端からの要素数、トゲを判定する際に見る中心からの要素数
 int flat_range = 5, needle_range = 4;
+// 平面を判定する際の傾きの誤差の許容値、トゲを判定する際の傾きの差の閾値
 double flat_threshold = 0.10, needle_threshold = 1;
+// 正面を向いたと判定する傾きの許容値、装填を行う距離の閾値
 double flat_angle_max = 0.05, load_dist = 0.10;
+// 角度を合わせる角速度、距離を合わせる速度
 double load_w = 0.03, load_vel = 0.03;
+// 装填を行う際にアームを上げる時間、ハンドを開く時間
 double load_arm_time = 1.0, open_hand_time = 1.0;
 
 string autoPickup() {
