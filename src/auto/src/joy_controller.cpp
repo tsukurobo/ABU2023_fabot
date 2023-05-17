@@ -241,6 +241,7 @@ string autoLoad() {
                 point p1 = polar_to_cartesian(back_scan.ranges[back_scan.ranges.size() - i - 1], back_scan.angle_min + back_scan.angle_increment * (back_scan.ranges.size() - i - 1));
                 double dist = sqrt(pow(p0.x - p1.x, 2) + pow(p0.y - p1.y, 2));
                 flat.x = (p1.x - p0.x) / dist; flat.y = (p1.y - p0.y) / dist;
+                ROS_INFO("FLAT: (%f, %f), (%f, %f)\n", p0.x, p0.y, p1.x, p1.y);
                 break;
             }
         }
@@ -277,17 +278,10 @@ string autoLoad() {
         //     }
         // }
 
-        // 値の強度（信頼性）の平均を求める
-        // double intensities_mean = 0.0;
-        // for (int i = 0; i < back_scan.intensities.size(); i++) {
-        //     intensities_mean += back_scan.intensities[i];
-        // }
-        // intensities_mean /= (double)back_scan.intensities.size();
-
         // 最小値を求める
         double min_dist = 1e6;
         for (int i = 0; i < back_scan.ranges.size(); i++) {
-            if (back_scan.ranges[i] < min_dist) {// && back_scan.intensities[i] > intensities_mean) {
+            if (back_scan.ranges[i] < min_dist) {
                 min_dist = back_scan.ranges[i];
                 needle_idx = i;
             }
