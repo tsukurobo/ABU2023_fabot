@@ -39,7 +39,7 @@ const uint8_t incEncNum[] = {2, 1, 0, 3}, absEncNum[] = {2, 1, 0, 3};
 float angle[4], angVel[4];
 float Vkp[4], Vki[4], Vkd[4], Pkp[4], Pki[4], Pkd[4];
 const uint16_t INC_CPR = 2048;
-const double steerCapableDuty = 0.4, driveCapableDuty[] = {0.312, 0.3, 0.325, 0.3};
+const double steerCapableDuty = 0.4, driveCapableDuty[] = {0.7, 0.7, 0.7, 0.7};// {0.312, 0.3, 0.325, 0.3};
 bool Stop = true;
 
 std_msgs::Int16MultiArray duty_msg, enc_msg;
