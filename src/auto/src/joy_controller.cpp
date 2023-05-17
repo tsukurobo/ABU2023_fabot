@@ -14,7 +14,8 @@
 #include "visualization_msgs/MarkerArray.h"
 
 #define ENABLE_BUTTON 5
-#define AUTO_BUTTON 4
+#define AUTO_LOAD_BUTTON 4
+#define AUTO_PICKUP_AXE 2
 #define VY_AXE 0
 #define VX_AXE 1
 #define WX_AXE 3 //2
@@ -78,14 +79,17 @@ PurePursuit pp1(pass1, pass_num1, look_ahead_dist1, 1.0);
 sensor_msgs::LaserScan front_scan, back_scan;
 
 // リング自動回収のパラメータ
+bool auto_pickup_flag = false;
 double pickup_dist = 0.14, pickup_vel = 0.1;
 double close_hand_time = 2.0, pickup_arm_time = 1.0;
 
 // 自動装填のパラメータ
+bool auto_load_flag = false;
 // 平面を判定する際に見る両端からの要素数、トゲを判定する際に見る中心からの要素数
 int flat_range = 5, needle_range = 4;
 // 平面を判定する際の傾きの誤差の許容値、トゲを判定する際の傾きの差の閾値
 double flat_threshold = 0.10, needle_threshold = 1;
+double parallel_stop_time = 1.0;
 // 正面を向いたと判定する傾きの許容値、装填を行う距離の閾値
 double flat_angle_max = 0.05, load_dist = 0.10;
 // 角度を合わせる角速度、距離を合わせる速度
@@ -204,7 +208,7 @@ bool is_needle(uint num, double threshold, uint range = 3) {
     point p1 = polar_to_cartesian(r1, theta1);
     point p2 = polar_to_cartesian(r2, theta2);
     double slope0 = (p1.y - p0.y) / (p1.x - p0.x);
-    double slope1 = (p2.y - p1.y) / (p2.x - p1.x);
+    double slope1 = (p2.y - p0.y) / (p2.x - p0.x);
     if (fabs(slope0 - slope1) > threshold) {
         return true;
     }
@@ -213,7 +217,7 @@ bool is_needle(uint num, double threshold, uint range = 3) {
 
 string autoLoad() {
     static string mode = "ROTATE";
-    static ros::Time up_start_time, open_start_time;
+    static ros::Time parallel_start_time, up_start_time, open_start_time;
     static ros::Time last_time = ros::Time::now();
 
     // しばらく呼び出されないときはROTATEモードに戻す
@@ -248,28 +252,47 @@ string autoLoad() {
         }
 
         target.stop = false;
-        if (flat.x < 0) steer.rotate(load_w); // 符号は要検証
-        else            steer.rotate(-load_w);
+        if (flat.x < 0) steer.rotate(-load_w); // 符号は要検証
+        else            steer.rotate(load_w);
 
         // 平面と機体の角度が合っている場合はPARALLELモードに移行
         if (abs(atan2(flat.x, flat.y)) < flat_angle_max) {
             mode = "PARALLEL";
             ROS_INFO_STREAM("PARALLEL");
+            steer.stop();
+            parallel_start_time = ros::Time::now();
         }
     }
     else if (mode == "PARALLEL") {
         // 目印となる平面上の突起を探す
         int needle_idx = -1;
-        for (int i = 0; i < middle - needle_range - 1; i++) {
-            if (is_needle(middle + i, needle_threshold, needle_range)) {
-                needle_idx = middle + i;
-                break;
-            }
-            else if (is_needle(middle - i, needle_threshold, needle_range)) {
-                needle_idx = middle - i;
-                break;
+        // for (int i = 0; i < middle - needle_range - 1; i++) {
+        //     if (is_needle(middle + i, needle_threshold, needle_range)) {
+        //         needle_idx = middle + i;
+        //         break;
+        //     }
+        //     else if (is_needle(middle - i, needle_threshold, needle_range)) {
+        //         needle_idx = middle - i;
+        //         break;
+        //     }
+        // }
+
+        // 値の強度（信頼性）の平均を求める
+        // double intensities_mean = 0.0;
+        // for (int i = 0; i < back_scan.intensities.size(); i++) {
+        //     intensities_mean += back_scan.intensities[i];
+        // }
+        // intensities_mean /= (double)back_scan.intensities.size();
+
+        // 最小値を求める
+        double min_dist = 1e6;
+        for (int i = 0; i < back_scan.ranges.size(); i++) {
+            if (back_scan.ranges[i] < min_dist) {// && back_scan.intensities[i] > intensities_mean) {
+                min_dist = back_scan.ranges[i];
+                needle_idx = i;
             }
         }
+        
         if (needle_idx == -1) {
             target.stop = true;
             steer.parallel(0, 0);
@@ -278,11 +301,16 @@ string autoLoad() {
         }
 
         point needl = polar_to_cartesian(back_scan.ranges[needle_idx], back_scan.angle_min + back_scan.angle_increment * needle_idx);
+        ROS_INFO("NEEDL: %f, %f\n", needl.x, needl.y);
         double dist = sqrt(pow(needl.x, 2) + pow(needl.y, 2));
 
         vec needl_vec = {needl.x / dist, needl.y / dist}; // 符号は要検証
         target.stop = false;
-        steer.parallel(load_vel*needl_vec.x, load_vel*needl_vec.y);
+        steer.parallel(-load_vel*needl_vec.x, load_vel*needl_vec.y);
+
+        if (ros::Time::now().toSec() - parallel_start_time.toSec() < parallel_stop_time) {
+            steer.stop();
+        }
 
         // 平面上の突起との距離が近い場合はUP_ARMモードに移行
         if (dist < load_dist) {
@@ -403,15 +431,32 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         }else{
             arm_state_msg.arm = STOP_ARM;
         }
+
+        if (joy_msg.axes[AUTO_PICKUP_AXE] < -0.9) {
+            auto_pickup_flag = true;
+            ROS_INFO_STREAM("AUTO_PICKUP");
+        }
+        else {
+            auto_pickup_flag = false;
+        }
+
+        if (joy_msg.buttons[AUTO_LOAD_BUTTON]) {
+            auto_load_flag = true;
+            ROS_INFO_STREAM("AUTO_LOAD");
+        }
+        else {
+            auto_load_flag = false;
+        }
     }
-    else if (joy_msg.buttons[AUTO_BUTTON]) {
-        auto_flag = true;
-        ROS_INFO_STREAM("AUTO");
-    }
+    // else if (joy_msg.buttons[AUTO_BUTTON]) {
+    //     auto_flag = true;
+    //     ROS_INFO_STREAM("AUTO");
+    // }
     else {
         steer.stop();
         target.stop = true;
         auto_flag = false;
+        auto_pickup_flag = false;
 
         arm_state_msg.hand = 0;
         arm_state_msg.arm = 0;
@@ -530,6 +575,7 @@ int main(int argc, char **argv) {
     if (pnh.getParam("load_w", load_w)) load_w *= M_PI;
     pnh.getParam("needle_range", needle_range);
     pnh.getParam("needle_threshold", needle_threshold);
+    pnh.getParam("parallel_stop_time", parallel_stop_time);
     pnh.getParam("load_dist", load_dist);
     pnh.getParam("load_vel", load_vel);
     pnh.getParam("load_arm_time", load_arm_time);
@@ -544,6 +590,7 @@ int main(int argc, char **argv) {
 
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
     ros::Subscriber front_scan_sub = nh.subscribe("front_scan", 1, frontScanCb);
+    ros::Subscriber back_scan_sub = nh.subscribe("back_scan", 1, backScanCb);
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("marker", 1);
@@ -560,17 +607,20 @@ int main(int argc, char **argv) {
     while (ros::ok()) {
         ros::spinOnce();
 
-        if (auto_flag) {
-            //Auto();
+        if (auto_pickup_flag) {
+            autoPickup();
+        }
+
+        if (auto_load_flag) {
             autoLoad();
         }
 
         setTarget();
         target_pub.publish(target);
 
-        getCoodinate();
+        // getCoodinate();
 
-        marker_pub.publish(marker_array);
+        // marker_pub.publish(marker_array);
 
         arm_pub.publish(arm_state_msg);
 
