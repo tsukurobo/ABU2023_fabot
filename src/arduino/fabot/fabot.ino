@@ -23,7 +23,7 @@ ros::NodeHandle nh;
 #define DO_DOWN 2
 #define ARM_ENC 4 // 腕のアブソリュートエンコーダ番号
 #define UP_LIMIT 12400 // adbotの高さに合わせてあとで調整する
-#define DOWN_LIMIT 6500 //5893
+#define DOWN_LIMIT 5893
 
 int hand_state = 0;
 int arm_state = 0;
