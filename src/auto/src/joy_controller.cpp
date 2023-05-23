@@ -296,6 +296,7 @@ string autoLoad() {
 
         point needl = polar_to_cartesian(back_scan.ranges[needle_idx], back_scan.angle_min + back_scan.angle_increment * needle_idx);
         ROS_INFO("NEEDL: %f, %f\n", needl.x, needl.y);
+        if (load_dist < 0.10) needl.x += 0.10 - load_dist;
         double dist = sqrt(pow(needl.x, 2) + pow(needl.y, 2));
 
         vec needl_vec = {needl.x / dist, needl.y / dist}; // 符号は要検証

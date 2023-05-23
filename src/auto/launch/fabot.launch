@@ -46,7 +46,7 @@
             <param name="Pkp3" value="1.1"/>
             <param name="Pki3" value="0.035"/>
             <param name="Pkd3" value="0.18"/>
-            <param name="freq" value="100"/>
+            <param name="freq" value="200"/>
             <param name="hand_duty" value="800"/>
             <param name="arm_duty"  value="300"/>
 
@@ -62,9 +62,9 @@
             <param name="needle_range"      value="20"/>
             <param name="needle_threshold"  value="1.0"/>
             <param name="parallel_stop_time" value="0.3"/>
-            <param name="load_dist"         value="0.13"/>
-            <param name="load_vel"          value="0.13"/>
-            <param name="load_arm_time"     value="1.0"/>
+            <param name="load_dist"         value="0.10"/>
+            <param name="load_vel"          value="0.12"/>
+            <param name="load_arm_time"     value="2.0"/>
             <param name="open_hand_time"    value="1.0"/>
         </node>
     </group>
