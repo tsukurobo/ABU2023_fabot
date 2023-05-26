@@ -39,6 +39,7 @@ const uint8_t incEncNum[] = {2, 1, 0, 3}, absEncNum[] = {2, 1, 0, 3};
 float angle[4], angVel[4];
 float Vkp[4], Vki[4], Vkd[4], Pkp[4], Pki[4], Pkd[4];
 const uint16_t INC_CPR = 2048;
+const double p = 0.0;
 const double steerCapableDuty = 0.4, driveCapableDuty[] = {0.7, 0.7, 0.7, 0.7};// {0.312, 0.3, 0.325, 0.3};
 bool Stop = true;
 
@@ -162,10 +163,10 @@ void loop()
   /*ステア制御*/
   using namespace Cubic_controller;
   static Velocity_PID drivePID[] = {
-    {driveMotorNum[0], incEncNum[0], encoderType::inc, INC_CPR, driveCapableDuty[0], Vkp[0], Vki[0], Vkd[0], angVel[0], false, false},
-    {driveMotorNum[1], incEncNum[1], encoderType::inc, INC_CPR, driveCapableDuty[1], Vkp[1], Vki[1], Vkd[1], angVel[1], false, false},
-    {driveMotorNum[2], incEncNum[2], encoderType::inc, INC_CPR, driveCapableDuty[2], Vkp[2], Vki[2], Vkd[2], angVel[2], false, false},
-    {driveMotorNum[3], incEncNum[3], encoderType::inc, INC_CPR, driveCapableDuty[3], Vkp[3], Vki[3], Vkd[3], angVel[3], false, false},
+    {driveMotorNum[0], incEncNum[0], encoderType::inc, INC_CPR, driveCapableDuty[0], p, Vkp[0], Vki[0], Vkd[0], angVel[0], false, false},
+    {driveMotorNum[1], incEncNum[1], encoderType::inc, INC_CPR, driveCapableDuty[1], p, Vkp[1], Vki[1], Vkd[1], angVel[1], false, false},
+    {driveMotorNum[2], incEncNum[2], encoderType::inc, INC_CPR, driveCapableDuty[2], p, Vkp[2], Vki[2], Vkd[2], angVel[2], false, false},
+    {driveMotorNum[3], incEncNum[3], encoderType::inc, INC_CPR, driveCapableDuty[3], p, Vkp[3], Vki[3], Vkd[3], angVel[3], false, false},
   };
   static Position_PID steerPID[] = {
     {steerMotorNum[0], absEncNum[0], encoderType::abs, AMT22_CPR, steerCapableDuty, Pkp[0], Pki[0], Pkd[0], angle[0], false, false},
