@@ -132,7 +132,7 @@ string autoPickup() {
 
         // リングとの方位誤差を計算し、その方向に速度を与える
         double angle = front_scan.angle_min + front_scan.angle_increment * min_idx;
-        double w = 2*pickup_vel*sin(angle)/pickup_dist;
+        double w = 2*pickup_vel*sin(angle)/min_dist;
 
         target.stop = false;
         steer.xVehicle(pickup_vel, w);

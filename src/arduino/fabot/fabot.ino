@@ -11,7 +11,8 @@
 #include "fabot_msgs/ArmMsg.h"
 
 ros::NodeHandle nh;
-#define BAUDRATE 10000000
+#define BAUDRATE 80000000
+const int period = 2000;
 
 /*アーム制御のグローバル変数*/
 #define HAND_MOTOR 11  // 手のモーター番号
@@ -22,7 +23,7 @@ ros::NodeHandle nh;
 #define DO_UP 1
 #define DO_DOWN 2
 #define ARM_ENC 4 // 腕のアブソリュートエンコーダ番号
-#define UP_LIMIT 12400 // adbotの高さに合わせてあとで調整する
+#define UP_LIMIT 11500 //12400 // adbotの高さに合わせてあとで調整する
 #define DOWN_LIMIT 5893
 
 int hand_state = 0;
@@ -47,7 +48,7 @@ std_msgs::Int16MultiArray duty_msg, enc_msg;
 msgs::FourWheelSteerRad rad_msg;
 
 double enc_diff_to_rad(uint8_t num, bool direction, uint CPR = 2048) {
-  double rad = Inc_enc::get_diff(num) / (double)CPR * TWO_PI / 4.0 * 1000.0; // rad/s
+  double rad = Inc_enc::get_diff(num) / (double)CPR * TWO_PI / period * 1000.0 * 1000.0; // rad/s
   if (!direction) rad *= -1;
   return rad;
 }
@@ -206,7 +207,7 @@ void loop()
   }
   // enc_pub.publish(&enc_msg);
   // duty_pub.publish(&duty_msg);
-  rad_pub.publish(&rad_msg);
+//  rad_pub.publish(&rad_msg);
 
-  Cubic::update();
+  Cubic::update(period);
 }
