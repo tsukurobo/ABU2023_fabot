@@ -18,9 +18,10 @@
 
     <group if="$(arg joy_controller)">
         <node name="joy_controller" pkg="auto"  type="joy_controller"   output="screen" required="true">
+            <param name="freq" value="300"/>
+
             <param name="v_max" value="0.8"/>
             <param name="w_max" value="0.10"/>
-            <param name="wxy_max" value="1.0"/>
             <param name="TurnRadius_min" value="0.8"/>
             <param name="TurnRadius_max" value="10000000"/>
             <param name="Vkp0" value="0.1"/>
@@ -47,7 +48,6 @@
             <param name="Pkp3" value="1.0"/>
             <param name="Pki3" value="1.0"/>
             <param name="Pkd3" value="0.18"/>
-            <param name="freq" value="300"/>
             <param name="hand_duty" value="800"/>
             <param name="arm_duty"  value="350"/>
 
