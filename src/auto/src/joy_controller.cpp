@@ -60,21 +60,6 @@ double Pkp[4], Pki[4], Pkd[4];
 double angVel[4], angle[4];
 double x, y, theta;
 
-// 自律走行のパラメータ
-bool auto_flag = false;
-double auto_vx = 0.3;
-visualization_msgs::MarkerArray marker_array;
-
-point pass0[] = {{-0.1, 0.0}, {4.0, 0.0}};
-uint pass_num0 = 2;
-double look_ahead_dist0 = 2.0;
-PurePursuit pp0(pass0, pass_num0, look_ahead_dist0, 1.0);
-
-point pass1[] = {{5.0, 0.0}, {0.0, 0.0}};
-uint pass_num1 = 2;
-double look_ahead_dist1 = 2.0;
-PurePursuit pp1(pass1, pass_num1, look_ahead_dist1, 1.0);
-
 // スキャンデータ
 sensor_msgs::LaserScan front_scan, back_scan;
 
@@ -132,10 +117,10 @@ string autoPickup() {
 
         // リングとの方位誤差を計算し、その方向に速度を与える
         double angle = front_scan.angle_min + front_scan.angle_increment * min_idx;
-        double w = 2*pickup_vel*sin(angle)/min_dist;
+        double turn_radius = min_dist / (2*sin(angle));
 
         target.stop = false;
-        steer.xVehicle(pickup_vel, w);
+        steer.xVehicle(pickup_vel, turn_radius);
 
         // リングが近づいたら止まってハンドを閉じる
         if (min_dist < pickup_dist) {
@@ -337,60 +322,10 @@ string autoLoad() {
     return mode;
 }
 
-string auto0() {
-    target.stop = false;
-    double turn_radius = pp0.compute_turn_radius(x, y, theta);
-    if (pp0.get_finish_flag()) {
-        steer.stop();
-        target.stop = true;
-        ROS_INFO_STREAM("AUTO FINISH");
-        return "FINISH";
-    }
-    double w = auto_vx / turn_radius;
-    steer.xVehicle(auto_vx, w);
-    marker_array = pp0.get_marker("odom");
-    return "RUNNING";
-}
-
-string auto1() {
-    target.stop = false;
-    double turn_radius = pp1.compute_turn_radius(x, y, theta + M_PI);
-    if (pp1.get_finish_flag()) {
-        steer.stop();
-        target.stop = true;
-        ROS_INFO_STREAM("AUTO FINISH");
-        return "FINISH";
-    }
-    double w = -auto_vx / turn_radius;
-    steer.xVehicle(-auto_vx, w);
-    marker_array = pp1.get_marker("odom");
-    return "RUNNING";
-}
-
-void Auto() {
-    static string mode = "auto0";
-    if (mode == "auto0") {
-        if(auto0() == "FINISH") {
-            mode = "pickup";
-        }
-    }
-    else if (mode == "pickup") {
-        if(autoPickup() == "UP_ARM") {
-            mode = "auto1";
-        }
-    }
-    else if (mode == "auto1") {
-        if(auto1() == "FINISH") {
-            mode = "auto0";
-        }
-    }
-}
-
 void joyCb(const sensor_msgs::Joy &joy_msg) {
     double vx = 0.0, vy = 0.0, radius_x = TurnRadius_max, radius_y = TurnRadius_max, w = 0.0;
     double curvature_max = 1.0 / TurnRadius_min;
     if (joy_msg.buttons[ENABLE_BUTTON]) {
-        auto_flag = false;
         target.stop = false;
         vy =  joy_msg.axes[VY_AXE] * joy_msg.axes[VY_AXE] * copysign(v_max, joy_msg.axes[VY_AXE]);
         vx =  joy_msg.axes[VX_AXE] * joy_msg.axes[VX_AXE] * copysign(v_max, joy_msg.axes[VX_AXE]);
@@ -445,14 +380,9 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
             auto_load_flag = false;
         }
     }
-    // else if (joy_msg.buttons[AUTO_BUTTON]) {
-    //     auto_flag = true;
-    //     ROS_INFO_STREAM("AUTO");
-    // }
     else {
         steer.stop();
         target.stop = true;
-        auto_flag = false;
         auto_pickup_flag = false;
 
         arm_state_msg.hand = 0;
@@ -563,8 +493,6 @@ int main(int argc, char **argv) {
     pnh.getParam("pickup_vel", pickup_vel);
     pnh.getParam("close_hand_time", close_hand_time);
     pnh.getParam("pickup_arm_time", pickup_arm_time);
-    // 自律走行の速度
-    pnh.getParam("auto_vx", auto_vx);
     // 装填のパラメータ
     pnh.getParam("flat_range", flat_range);
     pnh.getParam("flat_threshold", flat_threshold);
