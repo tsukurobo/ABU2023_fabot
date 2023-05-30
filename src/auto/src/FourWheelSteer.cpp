@@ -81,7 +81,7 @@ void FourWheelSteer::xVehicle(double vx, double TurnRadius) {
     vxLimitter(vx);
     if(TurnRadiusLimitter(TurnRadius)) {
         Angle[0] = Angle[1] = Angle[2] = Angle[3] = 0.0;
-        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
+        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vx / DistPerEnc;
         return;
     }
 
@@ -110,7 +110,7 @@ void FourWheelSteer::yVehicle(double vy, double TurnRadius) {
     vxLimitter(vy);
     if(TurnRadiusLimitter(TurnRadius)) {
         Angle[0] = Angle[1] = Angle[2] = Angle[3] = M_PI_2;
-        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
+        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vy / DistPerEnc;
         return;
     }
 
