@@ -50,7 +50,7 @@ int freq = 1000;
 
 // ステアのパラメータ
 FourWheelSteer steer((80.0+0.92)*(21.0/49.0)*M_PI, 310.0, 350.0);
-double v_max = 1.0, w_max = M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
+double v_max = 1.0, w_max = M_PI, wxy_max = 0.5*M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
 
 // PIDのパラメータ
 double Vkp[4], Vki[4], Vkd[4];
@@ -387,14 +387,15 @@ void Auto() {
 }
 
 void joyCb(const sensor_msgs::Joy &joy_msg) {
-    double vx = 0.0, vy = 0.0, wx = 0.0, wy = 0.0;
+    double vx = 0.0, vy = 0.0, wx = 0.0, wy = 0.0, w = 0.0;
     if (joy_msg.buttons[ENABLE_BUTTON]) {
         auto_flag = false;
         target.stop = false;
         vy =  joy_msg.axes[VY_AXE] * joy_msg.axes[VY_AXE] * copysign(v_max, joy_msg.axes[VY_AXE]);
         vx =  joy_msg.axes[VX_AXE] * joy_msg.axes[VX_AXE] * copysign(v_max, joy_msg.axes[VX_AXE]);
-        wx  = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(w_max, joy_msg.axes[WX_AXE]);
-        wy  = -joy_msg.axes[WY_AXE] * joy_msg.axes[WY_AXE] * copysign(w_max, joy_msg.axes[WY_AXE]);
+        wx  = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(wxy_max, joy_msg.axes[WX_AXE]);
+        wy  = -joy_msg.axes[WY_AXE] * joy_msg.axes[WY_AXE] * copysign(wxy_max, joy_msg.axes[WY_AXE]);
+        w = joy_msg.axes[WX_AXE] * joy_msg.axes[WX_AXE] * copysign(w_max, joy_msg.axes[WX_AXE]);
         ROS_INFO_STREAM("MANUAL " + mode);
 
         if (mode == "XVEHICLE") {
@@ -407,7 +408,7 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
             steer.parallel(vx, vy);
         }
         else if (mode == "ROTATE") {
-            steer.rotate(wx);
+            steer.rotate(w);
         }
 
         //両方押してるときは手は停止
@@ -526,7 +527,8 @@ int main(int argc, char **argv) {
 
     ros::NodeHandle pnh("~");
     pnh.getParam("v_max", v_max);
-    if(pnh.getParam("w_max", w_max)) w_max *= M_PI;
+    if (pnh.getParam("wxy_max", wxy_max)) wxy_max *= M_PI;
+    if (pnh.getParam("w_max", w_max)) w_max *= M_PI;
     pnh.getParam("TurnRadius_min", TurnRadius_min);
     pnh.getParam("TurnRadius_max", TurnRadius_max);
     pnh.getParam("Vkp0", Vkp[0]);

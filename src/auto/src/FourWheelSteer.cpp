@@ -81,6 +81,12 @@ void FourWheelSteer::xVehicle(double vx, double w) {
     vxLimitter(vx);
     wLimitter(w);
 
+    if (abs(vx) < FLT_ZERO) {
+        Angle[0] = Angle[1] = Angle[2] = Angle[3] = 0.0;
+        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
+        return;
+    }
+
     if (abs(w) < FLT_ZERO) {
         Angle[0] = Angle[1] = Angle[2] = Angle[3] = 0.0;
         AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vx / DistPerEnc;
@@ -114,6 +120,12 @@ void FourWheelSteer::xVehicle(double vx, double w) {
 void FourWheelSteer::yVehicle(double vy, double w) {
     vxLimitter(vy);
     wLimitter(w);
+
+    if (abs(vy) < FLT_ZERO) {
+        Angle[0] = Angle[1] = Angle[2] = Angle[3] = M_PI_2;
+        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
+        return;
+    }
 
     if (abs(w) < FLT_ZERO) {
         Angle[0] = Angle[1] = Angle[2] = Angle[3] = M_PI_2;
