@@ -87,8 +87,8 @@ namespace Cubic_controller
      * @param limit 角度を一定範囲に収めるかどうか。省略可能で、デフォルトはtrue
      * @return constexpr double angle[rad](-PI<= angle < PI)
      */
-    constexpr double encoderToAngle(const int32_t encoder, const uint16_t CPR, const double offset = -PI, const bool limit = true)
-    {
+    constexpr double encoderToAngle(const int32_t encoder, const uint16_t CPR, const double offset = 0, const bool limit = true)
+    { // offset -> 0
         if (limit)
         {
             return limitAngle(offset + encoder * (TWO_PI / (double)CPR));
@@ -394,7 +394,7 @@ namespace Cubic_controller
     }
     inline double Position_PID::encoderToAngle(const int32_t encoder)
     {
-        double angle = Cubic_controller::encoderToAngle(encoder, this->CPR, -PI, true);
+        double angle = Cubic_controller::encoderToAngle(encoder, this->CPR, 0, true); // offset -> 0
         static double prevAngle = angle;
         double actualAngle = angle;
 
