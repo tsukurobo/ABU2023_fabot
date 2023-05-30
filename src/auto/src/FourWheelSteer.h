@@ -49,9 +49,9 @@ public:
     // 回転するための目標ステア角と目標RPSを計算
     void rotate(double w);
     // x方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
-    void xVehicle(double vx, double w);
+    void xVehicle(double vx, double TurnRadius);
     // y方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
-    void yVehicle(double vy, double w);
+    void yVehicle(double vy, double TurnRadius);
     // 停止
     void stop() {
         AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
