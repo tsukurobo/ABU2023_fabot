@@ -29,6 +29,7 @@
 #define OPEN_HAND_BUTTON 1 //Bボタン
 #define UP_ARM_BUTTON 3 //Yボタン
 #define DOWN_ARM_BUTTON 0 //Aボタン
+#define DOWN_ARM_AXE 5
 #define CLOSE_HAND 2
 #define OPEN_HAND 1
 #define STOP_HAND 0
@@ -280,6 +281,7 @@ string autoLoad() {
         }
 
         point needl = polar_to_cartesian(back_scan.ranges[needle_idx], back_scan.angle_min + back_scan.angle_increment * needle_idx);
+        needl.x -= 0.05; needl.y -= 0.005;
         ROS_INFO("NEEDL: %f, %f\n", needl.x, needl.y);
         if (load_dist < 0.10) needl.x += 0.10 - load_dist;
         double dist = sqrt(pow(needl.x, 2) + pow(needl.y, 2));
@@ -358,13 +360,13 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         //両方押してるときは腕は停止
         if(joy_msg.buttons[UP_ARM_BUTTON]==1 && joy_msg.buttons[DOWN_ARM_BUTTON]==0){
             arm_state_msg.arm = UP_ARM;
-        }else if(joy_msg.buttons[DOWN_ARM_BUTTON]==1 && joy_msg.buttons[UP_ARM_BUTTON]==0){
+        }else if((joy_msg.buttons[DOWN_ARM_BUTTON]==1 || joy_msg.axes[DOWN_ARM_AXE] < -0.7) && joy_msg.buttons[UP_ARM_BUTTON]==0){
             arm_state_msg.arm = DOWN_ARM;
         }else{
             arm_state_msg.arm = STOP_ARM;
         }
 
-        if (joy_msg.axes[AUTO_PICKUP_AXE] < -0.9) {
+        if (joy_msg.axes[AUTO_PICKUP_AXE] < -0.7) {
             auto_pickup_flag = true;
             ROS_INFO_STREAM("AUTO_PICKUP");
         }

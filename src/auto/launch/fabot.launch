@@ -20,31 +20,31 @@
         <node name="joy_controller" pkg="auto"  type="joy_controller"   output="screen" required="true">
             <param name="freq" value="300"/>
 
-            <param name="v_max" value="0.8"/>
-            <param name="w_max" value="0.10"/>
+            <param name="v_max" value="8.0"/>
+            <param name="w_max" value="0.75"/>
             <param name="TurnRadius_min" value="0.8"/>
             <param name="TurnRadius_max" value="10000000"/>
-            <param name="Vkp0" value="0.1"/>
+            <param name="Vkp0" value="0.08"/>
             <param name="Vki0" value="0.0"/>
-            <param name="Vkd0" value="0.0"/>
+            <param name="Vkd0" value="0.0001"/>
             <param name="Pkp0" value="1.0"/>
             <param name="Pki0" value="1.0"/>
             <param name="Pkd0" value="0.18"/>
-            <param name="Vkp1" value="0.1"/>
+            <param name="Vkp1" value="0.08"/>
             <param name="Vki1" value="0.0"/>
-            <param name="Vkd1" value="0.0"/>
+            <param name="Vkd1" value="0.0001"/>
             <param name="Pkp1" value="1.0"/>
             <param name="Pki1" value="1.0"/>
             <param name="Pkd1" value="0.18"/>
-            <param name="Vkp2" value="0.1"/>
+            <param name="Vkp2" value="0.08"/>
             <param name="Vki2" value="0.0"/>
-            <param name="Vkd2" value="0.0"/>
+            <param name="Vkd2" value="0.0001"/>
             <param name="Pkp2" value="1.0"/>
             <param name="Pki2" value="1.0"/>
             <param name="Pkd2" value="0.18"/>
-            <param name="Vkp3" value="0.1"/>
+            <param name="Vkp3" value="0.08"/>
             <param name="Vki3" value="0.0"/>
-            <param name="Vkd3" value="0.0"/>
+            <param name="Vkd3" value="0.0001"/>
             <param name="Pkp3" value="1.0"/>
             <param name="Pki3" value="1.0"/>
             <param name="Pkd3" value="0.18"/>
@@ -52,19 +52,19 @@
             <param name="arm_duty"  value="350"/>
 
             <param name="pickup_dist"   value="0.13"/>
-            <param name="pickup_vel"    value="0.15"/>
-            <param name="close_hand_time"   value="2.0"/>
+            <param name="pickup_vel"    value="2.0"/>
+            <param name="close_hand_time"   value="1.8"/>
             <param name="pickup_arm_time"   value="2.0"/>
 
             <param name="flat_range"        value="10"/>
             <param name="flat_threshold"    value="0.05"/>
             <param name="flat_angle_max"    value="0.03"/>
-            <param name="load_w"            value="0.07"/>
+            <param name="load_w"            value="0.15"/>
             <param name="needle_range"      value="20"/>
             <param name="needle_threshold"  value="1.0"/>
             <param name="parallel_stop_time" value="0.3"/>
-            <param name="load_dist"         value="0.10"/>
-            <param name="load_vel"          value="0.14"/>
+            <param name="load_dist"         value="0.06"/>
+            <param name="load_vel"          value="1.7"/>
             <param name="load_arm_time"     value="1.5"/>
             <param name="open_hand_time"    value="1.0"/>
         </node>
