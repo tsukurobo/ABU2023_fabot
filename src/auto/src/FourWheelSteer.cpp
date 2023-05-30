@@ -31,10 +31,10 @@ void FourWheelSteer::wLimitter(double &w) {
 bool FourWheelSteer::TurnRadiusLimitter(double &TurnRadius) {
     bool straight = false;
     // TurnRadius_minを下回っていた場合、補正する。
-    if (abs(TurnRadius) < TurnRadius_min) TurnRadius = TurnRadius_min;
+    if (abs(TurnRadius) < TurnRadius_min) TurnRadius = copysign(TurnRadius_min, TurnRadius);
     // TurnRadius_maxを上回っていた場合、補正して直進フラグを立てる
     else if (abs(TurnRadius) + FLT_ZERO > TurnRadius_max) {
-        TurnRadius = TurnRadius_max;
+        TurnRadius = copysign(TurnRadius_max, TurnRadius);
         straight = true;
     }
     return straight;
@@ -52,7 +52,7 @@ void FourWheelSteer::AngleLimitter(double &Angle, double &AngVel) {
     }
 }
 
-// ステアが暴走して危険！
+// 手動制御の場合、ステアが暴走して危険！
 void FourWheelSteer::parallel(double vx, double vy) {
     double v = vLimitter(vx, vy);
     if (abs(v) < FLT_ZERO) {
@@ -77,39 +77,27 @@ void FourWheelSteer::rotate(double w) {
     AngVel[2] = AngVel[3] =  angVel;    // 右前、右後の角速度
 }
 
-void FourWheelSteer::xVehicle(double vx, double w) {
+void FourWheelSteer::xVehicle(double vx, double TurnRadius) {
     vxLimitter(vx);
-    wLimitter(w);
-
-    if (abs(vx) < FLT_ZERO) {
-        Angle[0] = Angle[1] = Angle[2] = Angle[3] = 0.0;
-        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
+    if(TurnRadiusLimitter(TurnRadius)) {
+        parallel(vx, 0.0);
         return;
     }
-
-    if (abs(w) < FLT_ZERO) {
-        Angle[0] = Angle[1] = Angle[2] = Angle[3] = 0.0;
-        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vx / DistPerEnc;
-        return;
-    }
-
-    double TurnRadius = abs(vx / w);
-    TurnRadiusLimitter(TurnRadius);
 
     static const double HalfDistLRWheel = DistLRWheel / 2.0, HalfDistFBWheel = DistFBWheel / 2.0;
     double angVel = vx / DistPerEnc;
 
-    double inside_angle   = atan2(HalfDistFBWheel, TurnRadius - HalfDistLRWheel);
-    double outside_angle  = atan2(HalfDistFBWheel, TurnRadius + HalfDistLRWheel);
-    double inside_angVel  = hypot(HalfDistFBWheel, TurnRadius - HalfDistLRWheel) / TurnRadius * angVel;
-    double outside_angVel = hypot(HalfDistFBWheel, TurnRadius + HalfDistLRWheel) / TurnRadius * angVel;
-    if (w > 0) {
+    double inside_angle   = atan2(HalfDistFBWheel, abs(TurnRadius) - HalfDistLRWheel);
+    double outside_angle  = atan2(HalfDistFBWheel, abs(TurnRadius) + HalfDistLRWheel);
+    double inside_angVel  = hypot(HalfDistFBWheel, abs(TurnRadius) - HalfDistLRWheel) / abs(TurnRadius) * angVel;
+    double outside_angVel = hypot(HalfDistFBWheel, abs(TurnRadius) + HalfDistLRWheel) / abs(TurnRadius) * angVel;
+    if (TurnRadius > 0) { // 左旋回
         Angle[0] = inside_angle; Angle[1] = -inside_angle;
         Angle[2] = -outside_angle; Angle[3] = outside_angle;
         AngVel[0] = AngVel[1] = inside_angVel;
         AngVel[2] = AngVel[3] = outside_angVel;
     }
-    else {
+    else { // 右旋回
         Angle[0] = -outside_angle; Angle[1] = outside_angle;
         Angle[2] = inside_angle; Angle[3] = -inside_angle;
         AngVel[0] = AngVel[1] = outside_angVel;
@@ -117,33 +105,21 @@ void FourWheelSteer::xVehicle(double vx, double w) {
     }
 }
 
-void FourWheelSteer::yVehicle(double vy, double w) {
+void FourWheelSteer::yVehicle(double vy, double TurnRadius) {
     vxLimitter(vy);
-    wLimitter(w);
-
-    if (abs(vy) < FLT_ZERO) {
-        Angle[0] = Angle[1] = Angle[2] = Angle[3] = M_PI_2;
-        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
+    if(TurnRadiusLimitter(TurnRadius)) {
+        parallel(0.0, vy);
         return;
     }
-
-    if (abs(w) < FLT_ZERO) {
-        Angle[0] = Angle[1] = Angle[2] = Angle[3] = M_PI_2;
-        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vy / DistPerEnc;
-        return;
-    }
-
-    double TurnRadius = abs(vy / w);
-    TurnRadiusLimitter(TurnRadius);
 
     static const double HalfDistLRWheel = DistLRWheel / 2.0, HalfDistFBWheel = DistFBWheel / 2.0;
     double angVel = vy / DistPerEnc;
 
-    double inside_angle   = atan2(HalfDistLRWheel, TurnRadius - HalfDistFBWheel);
-    double outside_angle  = atan2(HalfDistLRWheel, TurnRadius + HalfDistFBWheel);
-    double inside_angVel  = hypot(HalfDistLRWheel, TurnRadius - HalfDistFBWheel) / TurnRadius * angVel;
-    double outside_angVel = hypot(HalfDistLRWheel, TurnRadius + HalfDistFBWheel) / TurnRadius * angVel;
-    if (w > 0) {
+    double inside_angle   = atan2(HalfDistLRWheel, abs(TurnRadius) - HalfDistFBWheel);
+    double outside_angle  = atan2(HalfDistLRWheel, abs(TurnRadius) + HalfDistFBWheel);
+    double inside_angVel  = hypot(HalfDistLRWheel, abs(TurnRadius) - HalfDistFBWheel) / abs(TurnRadius) * angVel;
+    double outside_angVel = hypot(HalfDistLRWheel, abs(TurnRadius) + HalfDistFBWheel) / abs(TurnRadius) * angVel;
+    if (TurnRadius > 0) {
         Angle[1] = inside_angle; Angle[2] = -inside_angle;
         Angle[3] = -outside_angle; Angle[0] = outside_angle;
         AngVel[1] = AngVel[2] = inside_angVel;
@@ -179,7 +155,6 @@ bool FourWheelSteer::anomalyDetect(double angVel[4], double angle[4]) {
     return false;
 }
 
-// 縦横比が異なる場合に対応できていない
 void FourWheelSteer::calcOdom(double angVel[4], double angle[4]) {
     static double a = atan2(DistLRWheel, DistFBWheel);
     static ros::Time prev_time = ros::Time::now();
