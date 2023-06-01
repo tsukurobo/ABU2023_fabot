@@ -20,7 +20,7 @@
         <node name="joy_controller" pkg="auto"  type="joy_controller"   output="screen" required="true">
             <param name="freq" value="300"/>
 
-            <param name="v_max" value="8.0"/>
+            <param name="v_max" value="10.0"/>
             <param name="w_max" value="0.75"/>
             <param name="TurnRadius_min" value="0.8"/>
             <param name="TurnRadius_max" value="10000000"/>

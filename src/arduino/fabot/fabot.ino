@@ -23,8 +23,8 @@ const int period = 2000;
 #define DO_UP 1
 #define DO_DOWN 2
 #define ARM_ENC 4 // 腕のアブソリュートエンコーダ番号
-#define UP_LIMIT 11500 //12400 // adbotの高さに合わせてあとで調整する
-#define DOWN_LIMIT 5433
+#define UP_LIMIT 12000 //12400 // adbotの高さに合わせてあとで調整する
+#define DOWN_LIMIT 5863
 
 int hand_state = 0;
 int arm_state = 0;

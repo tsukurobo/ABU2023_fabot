@@ -27,8 +27,8 @@
     <param name="point_cloud_preservative"    type="bool"   value="false"/>
 
     <!-- float property -->
-    <param name="angle_min"    type="double" value="-30" />
-    <param name="angle_max"    type="double" value="30" />
+    <param name="angle_min"    type="double" value="-20" />
+    <param name="angle_max"    type="double" value="20" />
     <param name="range_min"    type="double" value="0.1" />
     <param name="range_max"    type="double" value="12.0" />
     <!-- frequency is invalid, External PWM control speed -->
