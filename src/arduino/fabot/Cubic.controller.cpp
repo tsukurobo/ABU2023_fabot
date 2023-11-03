@@ -37,7 +37,13 @@ namespace Cubic_controller
             Serial.print("dutyCycle:");
             Serial.println(dutyCycle);
         }
-        DC_motor::put(motorNo, dutyCycle * DUTY_SPI_MAX, DUTY_SPI_MAX);
+
+        // 雙峰祭用：入力Dutyの大きさに制限を追加
+        if(dutyCycle < DUTY_SPI_MAX/3 ){
+          DC_motor::put(motorNo, dutyCycle * DUTY_SPI_MAX, DUTY_SPI_MAX);
+        }else{
+          DC_motor::put(motorNo, DUTY_SPI_MAX/3, DUTY_SPI_MAX);
+        }
         return dutyCycle;
     }
 
