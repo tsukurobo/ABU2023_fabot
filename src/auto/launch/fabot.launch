@@ -4,9 +4,9 @@
     <arg name="joy_controller"  default="true"/>
     <arg name="odometry"        default="false"/>
     <arg name="arduino"         default="true"/>
-    <arg name="front_laser"     default="true"/>
-    <arg name="back_laser"      default="true"/>
-    <arg name="map_server"      default="true"/>
+    <arg name="front_laser"     default="false"/>
+    <arg name="back_laser"      default="false"/>
+    <arg name="map_server"      default="false"/>
 
     <arg name="map_file"        default="$(find auto)/map/side_area_map.yaml"/>
 
@@ -20,8 +20,8 @@
         <node name="joy_controller" pkg="auto"  type="joy_controller"   output="screen" required="true">
             <param name="freq" value="300"/>
 
-            <param name="v_max" value="0.8"/>
-            <param name="w_max" value="0.10"/>
+            <param name="v_max" value="0.3"/>
+            <param name="w_max" value="0.05"/>
             <param name="TurnRadius_min" value="0.8"/>
             <param name="TurnRadius_max" value="10000000"/>
             <param name="Vkp0" value="0.1"/>
@@ -49,7 +49,7 @@
             <param name="Pki3" value="1.0"/>
             <param name="Pkd3" value="0.18"/>
             <param name="hand_duty" value="800"/>
-            <param name="arm_duty"  value="350"/>
+            <param name="arm_duty"  value="100"/>
 
             <param name="pickup_dist"   value="0.13"/>
             <param name="pickup_vel"    value="0.15"/>
